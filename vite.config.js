@@ -1,21 +1,19 @@
+// vite.config.js - 修改base配置
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   
-  // 关键配置：基础路径 - 使用相对路径
-  base: './',
+  // 关键修改：对于GitHub Pages使用绝对路径
+  base: '/medical-platform/',
   
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     
-    // 构建优化配置
     rollupOptions: {
       output: {
-        // 确保资源文件使用相对路径
         chunkFileNames: 'assets/js/[name]-[hash].js',
         entryFileNames: 'assets/js/[name]-[hash].js',
         assetFileNames: (assetInfo) => {
@@ -31,16 +29,14 @@ export default defineConfig({
       }
     },
     
-    // 构建大小警告阈值
     chunkSizeWarningLimit: 1000
   },
   
   server: {
     port: 3000,
-    open: true // 开发服务器自动打开浏览器
+    open: true
   },
   
-  // 预览配置（构建后本地预览）
   preview: {
     port: 3001,
     host: true
