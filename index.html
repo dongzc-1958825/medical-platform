@@ -1,12 +1,155 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>众创医案平台</title>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/mylogo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="众创医案 - 专业医疗案例分享平台" />
+    
+    <!-- 缓存控制 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <!-- PWA配置 -->
+    <link rel="apple-touch-icon" href="/mylogo.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    
+    <title>众创医案</title>
+    
+    <!-- 路由处理脚本 -->
+    <script>
+        // 处理从404.html重定向过来的路由
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectPath = urlParams.get('path');
+            
+            if (redirectPath && redirectPath !== '/') {
+                // 清除URL参数，使用history API导航到正确路径
+                const newUrl = window.location.origin + 
+                              '/medical-platform' + 
+                              (redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath);
+                window.history.replaceState(null, '', newUrl);
+            }
+            
+            // 健康检查脚本
+            const healthCheck = {
+                init: function() {
+                    // 每30秒检查一次应用状态
+                    setInterval(() => {
+                        this.checkHealth();
+                    }, 30000);
+                },
+                checkHealth: function() {
+                    // 简单的健康检查：确保应用正常运行
+                    if (typeof window.__APP_READY__ === 'undefined') {
+                        console.warn('应用状态异常，准备重新加载...');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 5000);
+                    }
+                }
+            };
+            
+            // 标记应用已加载
+            window.__APP_READY__ = true;
+            
+            // 启动健康检查
+            window.addEventListener('load', function() {
+                healthCheck.init();
+            });
+        })();
+    </script>
+    
+    <!-- 移动端优化 -->
+    <style>
+        /* 防止缩放 */
+        .no-zoom {
+            font-size: 16px;
+            max-height: none;
+        }
+        
+        /* 加载状态 */
+        .loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 安全区域适配 */
+        .safe-area-inset-top {
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .safe-area-inset-bottom {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
 </head>
 <body>
+    <!-- 加载状态 -->
+    <div id="loading" class="loading-container">
+        <div class="loading-spinner"></div>
+        <div>众创医案平台加载中...</div>
+    </div>
+
+    <!-- React应用根节点 -->
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- 隐藏加载状态并显示应用的脚本 -->
+    <script>
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const loadingElement = document.getElementById('loading');
+                if (loadingElement) {
+                    loadingElement.style.display = 'none';
+                }
+                
+                // 触发React应用渲染
+                if (window.renderApp) {
+                    window.renderApp();
+                }
+            }, 1000);
+        });
+        
+        // 错误处理
+        window.addEventListener('error', function(e) {
+            console.error('应用错误:', e.error);
+            // 可以在这里添加错误上报
+        });
+        
+        // 未处理的Promise拒绝
+        window.addEventListener('unhandledrejection', function(e) {
+            console.error('未处理的Promise拒绝:', e.reason);
+            e.preventDefault();
+        });
+    </script>
+
+    <!-- 类型声明 -->
+    <script type="module">
+        // 标记应用类型为模块
+        window.__APP_MODULE__ = true;
+    </script>
 </body>
 </html>
