@@ -117,6 +117,9 @@
     <!-- React应用根节点 -->
     <div id="root"></div>
 
+    <!-- React应用入口脚本 - 关键修复！Vite通过这个发现并打包整个应用 -->
+    <script type="module" src="/src/main.tsx"></script>
+
     <!-- 隐藏加载状态并显示应用的脚本 -->
     <script>
         window.addEventListener('load', function() {
