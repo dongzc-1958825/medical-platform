@@ -1,16 +1,37 @@
-@"
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset=\"utf-8\">
+    <meta charset="utf-8">
     <title>重定向中...</title>
     <script>
-        // 简单重定向到首页，React Router会处理后续
-        window.location.href = '/medical-platform/';
+        // 处理所有404情况，确保重定向到正确路径
+        const currentPath = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+        
+        console.log('404处理 - 当前路径:', currentPath);
+        
+        let targetUrl;
+        
+        // 如果路径不以 /medical-platform 开头，添加前缀
+        if (!currentPath.startsWith('/medical-platform')) {
+            targetUrl = '/medical-platform' + (currentPath === '/' ? '' : currentPath) + search + hash;
+        } else {
+            // 已经是正确路径但有404，重定向到首页让React Router处理路由
+            targetUrl = '/medical-platform/index.html?path=' + encodeURIComponent(currentPath.replace('/medical-platform', '') || '/') + search + hash;
+        }
+        
+        console.log('404处理 - 重定向到:', targetUrl);
+        window.location.replace(targetUrl);
     </script>
 </head>
 <body>
-    <p>正在跳转...</p>
+    <p>正在重定向到医案平台...</p>
+    <script>
+        // 备用重定向，如果上面的脚本没执行
+        setTimeout(function() {
+            window.location.href = '/medical-platform/';
+        }, 3000);
+    </script>
 </body>
 </html>
-"@ | Out-File -FilePath "public/404.html" -Encoding utf8 -Force
