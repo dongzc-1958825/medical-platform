@@ -1,0 +1,32 @@
+# 用上面的代码替换 public/404.html
+# 或者如果文件不存在就创建
+
+@"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset=\"utf-8\">
+    <title>重定向中...</title>
+    <script>
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+        
+        console.log('404重定向 - 原始路径:', path);
+        
+        let appPath = path.replace('/medical-platform', '');
+        if (appPath === '') appPath = '/';
+        
+        const redirectUrl = '/medical-platform/index.html' + 
+                           (appPath !== '/' ? '?path=' + encodeURIComponent(appPath) : '') + 
+                           search + hash;
+        
+        console.log('404重定向 - 目标URL:', redirectUrl);
+        window.location.replace(redirectUrl);
+    </script>
+</head>
+<body>
+    <p>正在跳转到医案平台...</p>
+</body>
+</html>
+"@ | Out-File -FilePath "public/404.html" -Encoding utf8
