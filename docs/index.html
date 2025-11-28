@@ -19,19 +19,32 @@
     
     <title>众创医案</title>
     
-    <!-- 路由处理脚本 -->
+    <!-- 增强的路由处理脚本 -->
     <script>
-        // 处理从404.html重定向过来的路由
+        // 处理从404.html重定向过来的路由和直接访问
         (function() {
             const urlParams = new URLSearchParams(window.location.search);
             const redirectPath = urlParams.get('path');
+            const currentPath = window.location.pathname;
             
-            if (redirectPath && redirectPath !== '/') {
-                // 清除URL参数，使用history API导航到正确路径
-                const newUrl = window.location.origin + 
-                              '/medical-platform' + 
-                              (redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath);
-                window.history.replaceState(null, '', newUrl);
+            console.log('路由处理 - 当前路径:', currentPath, '重定向路径:', redirectPath);
+            
+            // 处理直接访问子路径的情况（如 /medical-platform/cases）
+            if (currentPath.startsWith('/medical-platform/') && 
+                !currentPath.endsWith('/') && 
+                !currentPath.endsWith('/index.html')) {
+                
+                const appPath = currentPath.replace('/medical-platform', '');
+                if (appPath && appPath !== '/') {
+                    console.log('直接访问子路径，使用history API:', appPath);
+                    window.history.replaceState(null, '', '/medical-platform' + appPath);
+                }
+            }
+            // 处理来自404的重定向
+            else if (redirectPath && redirectPath !== '/') {
+                const newPath = redirectPath.startsWith('/') ? redirectPath : '/' + redirectPath;
+                console.log('404重定向，导航到:', newPath);
+                window.history.replaceState(null, '', '/medical-platform' + newPath);
             }
             
             // 健康检查脚本
@@ -119,7 +132,7 @@
     <!-- React应用根节点 -->
     <div id="root"></div>
 
-    <!-- React应用入口脚本 - 关键修复！Vite通过这个发现并打包整个应用 -->
+    <!-- React应用入口脚本 -->
     
 
     <!-- 隐藏加载状态并显示应用的脚本 -->
