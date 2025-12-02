@@ -1,297 +1,42 @@
+# 覆盖现有的 404.html
+@'
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>众创医案平台 - 页面重定向</title>
-    <style>
-        /* 优雅的加载样式 */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Segoe UI Emoji', 'Segoe UI Symbol', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            line-height: 1.6;
-        }
-        
-        .container {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-            max-width: 600px;
-            width: 90%;
-            animation: fadeIn 0.8s ease-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        h1 {
-            font-size: 2.8rem;
-            margin-bottom: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(to right, #fff, #e0e7ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        p {
-            font-size: 1.2rem;
-            margin-bottom: 2.5rem;
-            opacity: 0.9;
-            max-width: 80%;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        
-        .loader {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-top: 4px solid #fff;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1.2s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-            margin: 0 auto 2.5rem;
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            margin-bottom: 2rem;
-        }
-        
-        .progress {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(to right, #60a5fa, #3b82f6);
-            border-radius: 3px;
-            animation: progress 2s ease-in-out forwards;
-        }
-        
-        @keyframes progress {
-            to { width: 100%; }
-        }
-        
-        .status {
-            font-size: 1rem;
-            opacity: 0.8;
-            margin-top: 1.5rem;
-            font-family: 'Courier New', monospace;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            display: inline-block;
-        }
-        
-        .noscript-message {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-top: 2rem;
-            border-left: 4px solid #fbbf24;
-        }
-        
-        .noscript-message a {
-            color: #fbbf24;
-            text-decoration: none;
-            font-weight: 600;
-            transition: color 0.3s;
-        }
-        
-        .noscript-message a:hover {
-            color: #f59e0b;
-            text-decoration: underline;
-        }
-        
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            letter-spacing: 1px;
-        }
-    </style>
-    
+    <title>众创医案平台</title>
     <script>
-        // ============================================
-        // SPA回退处理器 - GitHub Pages HashRouter兼容
-        // ============================================
-        // 功能：将直接访问的路径转换为HashRouter格式
-        // 例如：/cases → /#/cases
+        // GitHub Pages + HashRouter 最简单的重定向方案
+        const currentPath = window.location.pathname;
         
-        (function() {
-            console.log('🚀 SPA回退处理器启动 - HashRouter版本');
-            
-            // 显示当前状态
-            function updateStatus(message) {
-                const statusEl = document.getElementById('status');
-                if (statusEl) {
-                    statusEl.textContent = message;
-                }
-                console.log('状态:', message);
-            }
-            
-            // 检查当前URL是否需要重定向
-            function checkAndRedirect() {
-                const currentUrl = window.location;
-                console.log('当前URL分析:', {
-                    href: currentUrl.href,
-                    pathname: currentUrl.pathname,
-                    search: currentUrl.search,
-                    hash: currentUrl.hash,
-                    origin: currentUrl.origin
-                });
-                
-                updateStatus('分析URL路径...');
-                
-                // 情况1：已经有hash路由，无需处理
-                if (currentUrl.hash && currentUrl.hash.startsWith('#/')) {
-                    console.log('✅ 已经是HashRouter格式，无需重定向');
-                    updateStatus('URL格式正确，正在加载应用...');
-                    
-                    // 短暂显示后跳转到正确的hash路径
-                    setTimeout(() => {
-                        window.location.href = currentUrl.origin + currentUrl.hash;
-                    }, 800);
-                    return;
-                }
-                
-                // 情况2：访问的是根路径或index.html
-                const isRootPath = currentUrl.pathname === '/' || 
-                                  currentUrl.pathname.endsWith('index.html') ||
-                                  currentUrl.pathname.endsWith('/');
-                
-                if (isRootPath) {
-                    console.log('🌐 访问根路径，重定向到Hash首页');
-                    updateStatus('正在重定向到首页...');
-                    
-                    setTimeout(() => {
-                        window.location.replace(currentUrl.origin + '/#/');
-                    }, 1000);
-                    return;
-                }
-                
-                // 情况3：直接访问具体路径（如 /cases）
-                updateStatus('检测到直接访问路径，正在转换...');
-                
-                // 提取路径部分
-                let targetPath = currentUrl.pathname;
-                
-                // 处理GitHub Pages项目路径
-                // 如果是 /username.github.io/repo-name/cases 格式
-                const pathSegments = targetPath.split('/').filter(Boolean);
-                
-                // 假设项目名为 medical-platform，根据实际情况修改
-                const possibleRepoName = 'medical-platform';
-                
-                if (pathSegments.length > 0) {
-                    // 尝试从路径中提取实际页面路径
-                    if (pathSegments[0] === possibleRepoName) {
-                        // GitHub Pages项目路径
-                        targetPath = '/' + pathSegments.slice(1).join('/');
-                        console.log('提取项目路径:', targetPath);
-                    } else {
-                        // 可能是自定义域名或根路径
-                        targetPath = '/' + pathSegments.join('/');
-                    }
-                }
-                
-                // 清理路径
-                targetPath = targetPath.replace(/\/+/g, '/'); // 移除重复斜杠
-                if (targetPath.startsWith('/')) {
-                    targetPath = targetPath.substring(1); // 移除开头的斜杠
-                }
-                
-                console.log('转换后路径:', targetPath);
-                
-                // 构建新的Hash URL
-                const newHash = targetPath ? '#/' + targetPath : '#/';
-                const newUrl = currentUrl.origin + '/' + newHash + currentUrl.search;
-                
-                console.log('重定向到:', newUrl);
-                updateStatus('正在重定向到: ' + newHash);
-                
-                // 添加延迟让用户看到状态信息
-                setTimeout(() => {
-                    window.location.replace(newUrl);
-                }, 1200);
-            }
-            
-            // 启动检查
-            updateStatus('初始化重定向系统...');
-            setTimeout(checkAndRedirect, 300);
-            
-            // 防止无限重定向
-            let redirectCount = parseInt(sessionStorage.getItem('redirectCount') || '0');
-            if (redirectCount > 2) {
-                console.error('⚠️ 检测到可能的无限重定向，停止处理');
-                updateStatus('重定向次数过多，请检查配置');
-                return;
-            }
-            
-            sessionStorage.setItem('redirectCount', (redirectCount + 1).toString());
-            
-            // 清理重定向计数
-            setTimeout(() => {
-                sessionStorage.removeItem('redirectCount');
-            }, 5000);
-            
-        })();
+        // 如果是 404.html 页面本身，重定向到首页
+        if (currentPath.includes('404.html')) {
+            window.location.replace('/medical-platform/');
+        } else {
+            // 对于其他路径，保存路径并重定向到首页
+            sessionStorage.setItem('redirect', currentPath);
+            window.location.replace('/medical-platform/');
+        }
     </script>
 </head>
 <body>
-    <div class="container">
-        <div class="logo">🏥 众创医案平台</div>
-        <h1>页面重定向中</h1>
-        
-        <div class="loader"></div>
-        <div class="progress-bar">
-            <div class="progress"></div>
-        </div>
-        
-        <p>正在为您转换URL格式，以兼容单页应用路由...</p>
-        
-        <div class="status" id="status">初始化...</div>
-        
-        <noscript>
-            <div class="noscript-message">
-                <h3>JavaScript已禁用</h3>
-                <p>本应用需要JavaScript支持才能正常运行。</p>
-                <p>请启用JavaScript后<a href="/">刷新页面</a>，或直接访问：</p>
-                <ul style="text-align: left; margin-top: 1rem;">
-                    <li><a href="/#/">首页</a></li>
-                    <li><a href="/#/login">登录页面</a></li>
-                    <li><a href="/#/cases">医案列表</a></li>
-                </ul>
-            </div>
-        </noscript>
+    <noscript>
+        <p>请启用JavaScript以访问众创医案平台。</p>
+        <a href="/medical-platform/">点击这里返回首页</a>
+    </noscript>
+    <div style="text-align: center; padding: 50px;">
+        <h2>正在重定向...</h2>
+        <p>如果页面没有自动跳转，<a href="/medical-platform/">请点击这里</a></p>
     </div>
 </body>
 </html>
+'@ | Out-File -FilePath public/404.html -Encoding UTF8
+
+# 复制到 docs 目录
+Copy-Item public/404.html docs/404.html -Force
+
+# 提交
+git add public/404.html docs/404.html
+git commit -m "fix: 简化404.html重定向逻辑"
+git push origin main
