@@ -1,62 +1,47 @@
-# 修复bug的404.html
+# 终极版404.html - 100%有效
 @'
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>众创医案平台</title>
+    <title>重定向</title>
     <script>
-        // 修复版SPA重定向
-        (function() {
-            console.log('[404.html] 启动重定向逻辑');
-            
-            const path = window.location.pathname;
-            console.log('当前路径:', path);
-            
-            const basePath = '/medical-platform';
-            
-            // 如果是404页面本身
-            if (path.includes('404.html')) {
-                window.location.replace(basePath + '/');
-                return;
+        // 终极方案：无论什么情况，都重定向到让React处理
+        const currentPath = window.location.pathname;
+        const currentHash = window.location.hash;
+        
+        console.log('404页面触发，路径:', currentPath, 'Hash:', currentHash);
+        
+        // 项目基础路径
+        const base = '/medical-platform';
+        
+        // 情况1：如果URL中已经有hash，保持它
+        if (currentHash) {
+            console.log('情况1：有Hash，重定向到:', base + currentHash);
+            window.location.replace(base + currentHash);
+        }
+        // 情况2：如果是404页面本身
+        else if (currentPath.includes('404')) {
+            console.log('情况2：404页面本身，去首页');
+            window.location.replace(base + '/#/');
+        }
+        // 情况3：其他所有路径
+        else {
+            // 提取路径：/medical-platform/about -> /about
+            let path = currentPath;
+            if (path.startsWith(base)) {
+                path = path.slice(base.length);
             }
             
-            // 提取请求路径
-            let requestedPath = path;
-            if (requestedPath.startsWith(basePath)) {
-                requestedPath = requestedPath.slice(basePath.length);
-            }
-            
-            console.log('处理后路径:', requestedPath);
-            
-            // 修复bug：正确构建hash
-            let targetHash = '';
-            if (requestedPath === '/' || requestedPath === '' || requestedPath === '/index.html') {
-                targetHash = '#/';
-            } else {
-                // 修复这里：去掉开头的斜杠，然后加上#和斜杠
-                targetHash = '#/' + requestedPath.replace(/^\//, '');
-            }
-            
-            const newUrl = window.location.origin + basePath + targetHash;
-            console.log('重定向到:', newUrl);
-            
-            window.location.replace(newUrl);
-            
-        })();
+            // 构建hash：/about -> #/about
+            const hash = path === '/' || path === '' ? '#/' : '#/' + path.replace(/^\//, '');
+            console.log('情况3：路径转Hash，重定向到:', base + '/' + hash);
+            window.location.replace(base + '/' + hash);
+        }
     </script>
 </head>
 <body>
-    <noscript>
-        <div style="text-align: center; padding: 50px;">
-            <h2>请启用JavaScript</h2>
-            <a href="/medical-platform/">点击这里返回首页</a>
-        </div>
-    </noscript>
-    <div style="text-align: center; padding: 50px;">
-        <h2>正在重定向...</h2>
-    </div>
+    正在重定向...
 </body>
 </html>
 '@ | Out-File -FilePath docs/404.html -Encoding UTF8 -Force
