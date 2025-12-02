@@ -184,7 +184,8 @@ function App() {
   }
 
   return (
-    <Router>
+    // 🔧 关键修复：添加 basename="/medical-platform"
+    <Router basename="/medical-platform">
       {/* 路由调试器（开发环境有效） */}
       <RouteDebugger />
       
