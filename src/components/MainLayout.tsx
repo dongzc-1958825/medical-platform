@@ -1,5 +1,5 @@
 import React from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
+import { Link, useLocation, Outlet } from 'react-router-dom'; // 添加 Link
 import { User } from '../types';
 
 interface MainLayoutProps {
@@ -8,15 +8,17 @@ interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
-  const navigate = useNavigate();
   const location = useLocation();
-
-  const handleNavigation = (path: string) => {
-    navigate(path);
-  };
 
   const getDisplayName = () => {
     return user?.name || user?.username || '用户';
+  };
+
+  // 修复：使用正确的active状态检查（针对HashRouter）
+  const isActive = (path: string) => {
+    // HashRouter的location.hash包含#号
+    return location.hash === `#${path}` || 
+           (path === '/' && (location.hash === '#/' || location.hash === ''));
   };
 
   return (
@@ -40,74 +42,79 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
               )}
             </div>
 
-            {/* 右侧导航菜单 */}
+            {/* 右侧导航菜单 - 使用Link组件 */}
             <div className="flex items-center space-x-1">
-              {/* 主导航链接 */}
-              <button
-                onClick={() => handleNavigation('/')}
+              {/* 首页链接 */}
+              <Link
+                to="/"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/' 
+                  isActive('/') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 🏠 首页
-              </button>
+              </Link>
               
-              <button
-                onClick={() => handleNavigation('/cases')}
+              {/* 医案分享链接 */}
+              <Link
+                to="/cases"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/cases' 
+                  isActive('/cases') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 📋 医案分享
-              </button>
+              </Link>
               
-              <button
-                onClick={() => handleNavigation('/community')}
+              {/* 专病社区链接 */}
+              <Link
+                to="/community"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/community' 
+                  isActive('/community') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 👥 专病社区
-              </button>
+              </Link>
               
-              <button
-                onClick={() => handleNavigation('/help')}
+              {/* 寻医问药链接 */}
+              <Link
+                to="/help"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/help' 
+                  isActive('/help') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 ❓ 寻医问药
-              </button>
+              </Link>
               
-              <button
-                onClick={() => handleNavigation('/messages')}
+              {/* 消息链接 */}
+              <Link
+                to="/messages"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/messages' 
+                  isActive('/messages') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 📢 消息
-              </button>
+              </Link>
               
-              <button
-                onClick={() => handleNavigation('/profile')}
+              {/* 我的链接 */}
+              <Link
+                to="/profile"
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  location.pathname === '/profile' 
+                  isActive('/profile') 
                     ? 'bg-blue-100 text-blue-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 👤 我的
-              </button>
+              </Link>
 
               {/* 用户相关操作 */}
               <div className="ml-4 flex items-center space-x-2">
@@ -122,12 +129,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
                     </button>
                   </>
                 ) : (
-                  <button
-                    onClick={() => handleNavigation('/login')}
+                  <Link
+                    to="/login"
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
                   >
                     登录/注册
-                  </button>
+                  </Link>
                 )}
                 
                 {/* 语言切换 */}
@@ -140,7 +147,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ user, onLogout }) => {
         </div>
       </nav>
 
-      {/* 主内容区域 - 使用 Outlet 渲染子路由 */}
+      {/* 主内容区域 */}
       <main className="flex-1">
         <Outlet />
       </main>
