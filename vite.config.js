@@ -21,11 +21,18 @@ export default defineConfig({
     },
   },
   
-  // 构建配置
+  // 构建配置 - 关键修改：outDir 改为 'docs' 以兼容 GitHub Pages
   build: {
-    outDir: 'dist',
+    // ⚠️ 重要修改：GitHub Pages 要求 docs 或根目录
+    outDir: 'docs', // 从 'dist' 改为 'docs'
+    
+    // 生产环境关闭sourcemap
     sourcemap: false,
     
+    // 资源文件大小警告阈值
+    chunkSizeWarningLimit: 1000,
+    
+    // 拆包配置
     rollupOptions: {
       output: {
         // 资产文件命名
@@ -44,32 +51,31 @@ export default defineConfig({
         
         // 入口文件命名
         entryFileNames: 'assets/js/[name]-[hash].js',
-        
-        // ⚠️ 修复：移除有问题的manualChunks配置
-        // manualChunks: undefined, // 保持单chunk或根据需要配置
       }
     },
     
+    // 构建目标
     target: 'es2020',
+    
+    // 最小化配置
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
+        drop_console: true, // 生产环境移除console
         drop_debugger: true,
       },
     },
-    chunkSizeWarningLimit: 1000,
   },
   
   // 开发服务器配置
   server: {
     port: 3000,
-    open: true,
-    host: true,
-    strictPort: false,
+    open: true, // 自动打开浏览器
+    host: true, // 监听所有地址
+    strictPort: false, // 端口被占用时自动尝试其他端口
   },
   
-  // 预览配置
+  // 预览配置（生产构建预览）
   preview: {
     port: 4173,
     host: true,
@@ -78,6 +84,7 @@ export default defineConfig({
   
   // 环境变量配置
   define: {
+    // 定义全局常量
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
   },
   
