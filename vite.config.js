@@ -1,48 +1,97 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
   
-  // 关键修复：base路径配置
-  base: process.env.NODE_ENV === 'production' ? '/medical-platform/' : '/',
+  // 🔧 HashRouter必须使用相对路径
+  base: './',
+  
+  // 路径别名配置
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+      '@components': resolve(__dirname, './src/components'),
+      '@pages': resolve(__dirname, './src/pages'),
+      '@types': resolve(__dirname, './src/types'),
+      '@utils': resolve(__dirname, './src/utils'),
+      '@assets': resolve(__dirname, './src/assets'),
+    },
+  },
   
   // 构建配置
   build: {
-    // 关键修复：输出目录改为docs以兼容GitHub Pages
-    outDir: 'docs',
-    
-    // 其他优化配置
+    outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild',
-    target: 'esnext',
     
-    // 移除有问题的手动分块，让Vite自动优化
-    // rollupOptions: {
-    //   output: {
-    //     manualChunks: undefined // 让Vite自动决定分块策略
-    //   }
-    // }
+    rollupOptions: {
+      output: {
+        // 资产文件命名
+        assetFileNames: (assetInfo) => {
+          let extType = assetInfo.name.split('.').at(1)
+          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+            extType = 'images'
+          } else if (/woff2?|eot|ttf|otf/i.test(extType)) {
+            extType = 'fonts'
+          }
+          return `assets/${extType}/[name]-[hash][extname]`
+        },
+        
+        // chunk文件命名
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        
+        // 入口文件命名
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        
+        // ⚠️ 修复：移除有问题的manualChunks配置
+        // manualChunks: undefined, // 保持单chunk或根据需要配置
+      }
+    },
+    
+    target: 'es2020',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    chunkSizeWarningLimit: 1000,
   },
   
   // 开发服务器配置
   server: {
     port: 3000,
     open: true,
-    host: true
+    host: true,
+    strictPort: false,
   },
   
   // 预览配置
   preview: {
-    port: 3000,
-    host: true
+    port: 4173,
+    host: true,
+    open: true,
   },
   
-  // 解析配置
-  resolve: {
-    alias: {
-      '@': '/src'
-    }
-  }
+  // 环境变量配置
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  },
+  
+  // CSS配置
+  css: {
+    devSourcemap: false,
+    modules: {
+      localsConvention: 'camelCase',
+    },
+  },
+  
+  // 优化依赖预构建
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+    exclude: [],
+  },
 })
