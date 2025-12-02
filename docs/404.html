@@ -1,4 +1,4 @@
-# 创建新的 404.html（更智能的版本）
+# 修复bug的404.html
 @'
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -7,51 +7,41 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>众创医案平台</title>
     <script>
-        // 智能SPA重定向 - HashRouter专用
+        // 修复版SPA重定向
         (function() {
             console.log('[404.html] 启动重定向逻辑');
             
-            const currentUrl = window.location.href;
-            const currentPath = window.location.pathname;
-            const currentHash = window.location.hash;
+            const path = window.location.pathname;
+            console.log('当前路径:', path);
             
-            console.log('当前URL:', currentUrl);
-            console.log('当前路径:', currentPath);
-            console.log('当前Hash:', currentHash);
-            
-            // 判断是否是GitHub Pages的项目路径
             const basePath = '/medical-platform';
             
-            // 如果URL已经是404页面，直接重定向到首页
-            if (currentPath.includes('404.html')) {
-                console.log('是404页面本身，重定向到首页');
+            // 如果是404页面本身
+            if (path.includes('404.html')) {
                 window.location.replace(basePath + '/');
                 return;
             }
             
-            // 提取原始请求的路径（去掉项目基础路径）
-            let requestedPath = currentPath;
+            // 提取请求路径
+            let requestedPath = path;
             if (requestedPath.startsWith(basePath)) {
                 requestedPath = requestedPath.slice(basePath.length);
             }
             
-            console.log('请求的路径:', requestedPath);
+            console.log('处理后路径:', requestedPath);
             
-            // 构建新的HashRouter URL
+            // 修复bug：正确构建hash
             let targetHash = '';
-            
             if (requestedPath === '/' || requestedPath === '' || requestedPath === '/index.html') {
                 targetHash = '#/';
             } else {
-                // 将路径转换为hash格式
-                // 例如: /about -> #/about
-                targetHash = '#' + requestedPath.replace(/^\//, '/');
+                // 修复这里：去掉开头的斜杠，然后加上#和斜杠
+                targetHash = '#/' + requestedPath.replace(/^\//, '');
             }
             
-            const newUrl = window.location.origin + basePath + '/' + targetHash;
+            const newUrl = window.location.origin + basePath + targetHash;
             console.log('重定向到:', newUrl);
             
-            // 立即重定向
             window.location.replace(newUrl);
             
         })();
@@ -59,16 +49,14 @@
 </head>
 <body>
     <noscript>
-        <div style="text-align: center; padding: 50px; font-family: sans-serif;">
+        <div style="text-align: center; padding: 50px;">
             <h2>请启用JavaScript</h2>
-            <p>众创医案平台需要JavaScript才能正常运行。</p>
-            <p><a href="/medical-platform/">点击这里返回首页</a></p>
+            <a href="/medical-platform/">点击这里返回首页</a>
         </div>
     </noscript>
     <div style="text-align: center; padding: 50px;">
-        <h2>正在加载应用...</h2>
-        <p>如果页面没有自动跳转，请稍候。</p>
+        <h2>正在重定向...</h2>
     </div>
 </body>
 </html>
-'@ | Out-File -FilePath docs/404.html -Encoding UTF8
+'@ | Out-File -FilePath docs/404.html -Encoding UTF8 -Force
