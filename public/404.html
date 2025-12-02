@@ -1,42 +1,119 @@
+# 确保public目录存在
+if (-not (Test-Path public)) {
+    New-Item -ItemType Directory -Path public -Force
+    Write-Host "✅ 已创建public目录" -ForegroundColor Green
+}
+
+# 创建404.html文件
+$404Content = @'
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>医案平台</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>众创医案平台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 2rem;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
     <script>
-        // 立即重定向到应用首页
-        // 让 React Router 处理所有路由
-        const path = window.location.pathname;
-        const search = window.location.search;
-        const hash = window.location.hash;
-        
-        // 构建正确的应用URL
-        let appUrl = '/medical-platform/';
-        
-        // 如果当前路径不是根路径，添加路径参数
-        if (path && path !== '/' && path !== '/medical-platform/' && path !== '/medical-platform/index.html') {
-            // 提取应用内路径
-            let appPath = path.replace('/medical-platform', '');
-            if (appPath === '') appPath = '/';
-            appUrl += '?path=' + encodeURIComponent(appPath);
-        }
-        
-        // 保留其他URL参数和哈希
-        if (search && !appUrl.includes('?')) {
-            appUrl += search;
-        } else if (search) {
-            appUrl += '&' + search.slice(1);
-        }
-        appUrl += hash;
-        
-        console.log('404重定向: ', path, '→', appUrl);
-        window.location.replace(appUrl);
+        // SPA回退处理 - HashRouter兼容方案
+        (function() {
+            console.log('SPA回退处理器启动');
+            
+            // 保存当前访问的路径（不包括hash部分）
+            const originalPath = window.location.pathname + window.location.search;
+            console.log('原始访问路径:', originalPath);
+            
+            // 如果URL中已经有hash，说明可能已经正确访问
+            if (window.location.hash && window.location.hash !== '#') {
+                console.log('检测到hash路由，无需重定向');
+                return;
+            }
+            
+            // 如果是直接访问某个路径，重定向到hash路由
+            if (originalPath !== '/' && !originalPath.endsWith('/index.html')) {
+                // 提取路径部分，去掉开头的斜杠和可能的项目名称
+                let targetPath = originalPath;
+                
+                // 如果是GitHub Pages项目路径，如 /medical-platform/cases
+                if (targetPath.includes('/medical-platform')) {
+                    targetPath = targetPath.replace('/medical-platform', '');
+                }
+                
+                // 去掉开头的斜杠
+                targetPath = targetPath.replace(/^\//, '');
+                
+                console.log('目标路径:', targetPath);
+                
+                // 构建hash URL
+                const hashPath = targetPath ? `#/${targetPath}` : '#/';
+                const newUrl = window.location.origin + '/' + hashPath;
+                
+                console.log('重定向到:', newUrl);
+                
+                // 立即重定向
+                window.location.replace(newUrl);
+            } else {
+                // 访问的是根路径，重定向到首页
+                console.log('重定向到首页');
+                window.location.replace(window.location.origin + '/#/');
+            }
+        })();
     </script>
 </head>
 <body>
-    <noscript>
-        <p>请启用JavaScript或<a href="/medical-platform/">点击这里访问医案平台</a></p>
-    </noscript>
-    <p>正在跳转到医案平台...</p>
+    <div class="container">
+        <div class="loader"></div>
+        <h1>页面加载中</h1>
+        <p>正在为您重定向到正确的页面，请稍候...</p>
+        <noscript>
+            <p>JavaScript已禁用，请<a href="/" style="color: #FFD700;">点击这里返回首页</a></p>
+        </noscript>
+    </div>
 </body>
 </html>
+'@
+
+$404Content | Out-File -FilePath "public\404.html" -Encoding UTF8
+Write-Host "✅ 已创建public/404.html" -ForegroundColor Green
