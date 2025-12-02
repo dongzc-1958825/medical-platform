@@ -1,47 +1,88 @@
-# 终极版404.html - 100%有效
+# 创建智能404.html - 专门处理HashRouter刷新
 @'
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>重定向</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>重定向中...</title>
     <script>
-        // 终极方案：无论什么情况，都重定向到让React处理
+        // HashRouter专用刷新处理
+        console.log('🔄 404处理器启动 - HashRouter模式');
+        
+        const currentUrl = window.location.href;
         const currentPath = window.location.pathname;
         const currentHash = window.location.hash;
         
-        console.log('404页面触发，路径:', currentPath, 'Hash:', currentHash);
+        console.log('当前URL:', currentUrl);
+        console.log('路径:', currentPath);
+        console.log('Hash:', currentHash);
         
         // 项目基础路径
-        const base = '/medical-platform';
+        const basePath = '/medical-platform';
         
-        // 情况1：如果URL中已经有hash，保持它
-        if (currentHash) {
-            console.log('情况1：有Hash，重定向到:', base + currentHash);
-            window.location.replace(base + currentHash);
+        // 情况1：如果当前就在404页面，直接去首页
+        if (currentPath.includes('404.html')) {
+            console.log('📄 是404页面本身，去首页');
+            window.location.replace(basePath + '/#/');
+            return;
         }
-        // 情况2：如果是404页面本身
-        else if (currentPath.includes('404')) {
-            console.log('情况2：404页面本身，去首页');
-            window.location.replace(base + '/#/');
+        
+        // 情况2：检查URL中是否应该包含hash（基于路径）
+        // 提取用户试图访问的路径
+        let requestedPath = currentPath;
+        if (requestedPath.startsWith(basePath)) {
+            requestedPath = requestedPath.slice(basePath.length);
         }
-        // 情况3：其他所有路径
-        else {
-            // 提取路径：/medical-platform/about -> /about
-            let path = currentPath;
-            if (path.startsWith(base)) {
-                path = path.slice(base.length);
+        
+        console.log('用户想访问:', requestedPath);
+        
+        // 判断这个路径是否是React应用的有效路由
+        const validRoutes = [
+            '', '/', '/index.html',            // 首页
+            '/cases', '/cases/create',         // 医案相关
+            '/community',                      // 社区
+            '/help',                           // 帮助
+            '/messages',                       // 消息
+            '/profile',                        // 个人资料
+            '/login',                          // 登录
+            '/consultation/'                   // 咨询详情（前缀匹配）
+        ];
+        
+        // 检查是否是有效路由
+        const isValidRoute = validRoutes.some(route => {
+            if (route.endsWith('/')) {
+                // 前缀匹配（如/consultation/）
+                return requestedPath.startsWith(route);
             }
-            
-            // 构建hash：/about -> #/about
-            const hash = path === '/' || path === '' ? '#/' : '#/' + path.replace(/^\//, '');
-            console.log('情况3：路径转Hash，重定向到:', base + '/' + hash);
-            window.location.replace(base + '/' + hash);
+            // 精确匹配
+            return requestedPath === route;
+        });
+        
+        if (isValidRoute) {
+            // 有效路由：转换为hash格式
+            const hash = requestedPath === '' || requestedPath === '/' ? '#/' : '#' + requestedPath;
+            const targetUrl = basePath + '/' + hash;
+            console.log('✅ 有效路由，重定向到:', targetUrl);
+            window.location.replace(targetUrl);
+        } else {
+            // 无效路由：去首页
+            console.log('❌ 无效路由，去首页');
+            window.location.replace(basePath + '/#/');
         }
     </script>
 </head>
 <body>
-    正在重定向...
+    <noscript>
+        <div style="text-align: center; padding: 50px;">
+            <h2>请启用JavaScript</h2>
+            <a href="/medical-platform/">返回首页</a>
+        </div>
+    </noscript>
+    <div style="text-align: center; padding: 50px;">
+        <h2>正在重新加载应用...</h2>
+        <p>请稍候</p>
+    </div>
 </body>
 </html>
 '@ | Out-File -FilePath docs/404.html -Encoding UTF8 -Force
