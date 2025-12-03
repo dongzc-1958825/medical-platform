@@ -1,6 +1,6 @@
 // src/App.tsx
 import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';  // ✅ 修改1：改为HashRouter
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/MainLayout';
 import HomePage from './pages/HomePage';
 import CasesPage from './pages/CasesPage';
@@ -108,14 +108,8 @@ function App() {
   }
 
   return (
-    <Router 
-      basename={  // ✅ 修改2：添加basename配置
-        window.location.hostname.includes('github.io') 
-          ? '/medical-platform' 
-          : '/'
-      }
-    >
-      <div className="App" style={{ minHeight: '100vh' }}> {/* ✅ 修改3：确保最小高度 */}
+    <Router>
+      <div className="App">
         <Routes>
           {/* 登录页面（公共路由） */}
           <Route 
