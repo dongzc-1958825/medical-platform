@@ -1,20 +1,12 @@
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
 
+// 最简配置，唯一目标：构建成功
 export default defineConfig({
   plugins: [react()],
-  base: "/medical-platform/",
+  base: "/medical-platform/", // 保持你的base
   build: {
-    outDir: "docs",
-    assetsDir: "assets",
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        // 添加时间戳到文件名，强制新版本
-        assetFileNames: "assets/[name]-[hash]-[timestamp][extname]",
-        chunkFileNames: "assets/[name]-[hash]-[timestamp].js",
-        entryFileNames: "assets/[name]-[hash]-[timestamp].js"
-      }
-    }
+    outDir: "docs"
+    // 移除所有复杂选项，让Vite使用默认值
   }
 })
