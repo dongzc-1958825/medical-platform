@@ -1,189 +1,177 @@
-// src/App.tsx
-import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';  // ✅ 修改1：改为HashRouter
-import MainLayout from './components/MainLayout';
-import HomePage from './pages/HomePage';
-import CasesPage from './pages/CasesPage';
-import CreateCasePage from './pages/CreateCasePage';
-import HelpPage from './pages/HelpPage';
-import MessagesPage from './pages/MessagesPage';
-import ProfilePage from './pages/ProfilePage';
-import LoginPage from './pages/LoginPage';
-import ConsultationDetailPage from './pages/ConsultationDetailPage';
-import CommunityPage from './pages/CommunityPage';
-import { User } from './types';
+// ========== 生产环境测试 - App组件调试 ==========
+console.log('🧩 [DEBUG] App.tsx 开始执行');
+console.log('🧩 [DEBUG] 当前hash:', window.location.hash);
+console.log('🧩 [DEBUG] 完整URL:', window.location.href);
+// ========== 调试代码结束 ==========
 
-function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+import { HashRouter, Routes, Route } from 'react-router-dom';
 
-  // 检查本地存储中的用户登录状态
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const userData = localStorage.getItem('userData');
-        
-        console.log('检查认证状态:', { token, userData });
-        
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData);
-          console.log('找到用户数据:', parsedUser);
-          setUser(parsedUser);
-        } else {
-          console.log('未找到认证信息，用户未登录');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('检查认证状态时出错:', error);
-        // 清除可能损坏的数据
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
-
-  // 处理用户登录
-  const handleLogin = (userData: User, token: string) => {
-    console.log('用户登录:', userData);
-    setUser(userData);
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-  };
-
-  // 处理用户退出
-  const handleLogout = () => {
-    console.log('用户退出');
-    setUser(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-  };
-
-  // 更新用户信息
-  const updateUser = (updatedUser: User) => {
-    setUser(updatedUser);
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
-  };
-
-  // 保护路由组件
-  const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      );
-    }
-    
-    return user ? <>{children}</> : <Navigate to="/login" replace />;
-  };
-
-  // 公共路由组件（已登录用户访问登录页时重定向）
-  const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      );
-    }
-    
-    return !user ? <>{children}</> : <Navigate to="/" replace />;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">加载中...</p>
-        </div>
-      </div>
-    );
-  }
-
+// 简单测试组件 - 不导入任何业务组件
+function TestApp() {
+  console.log('🧩 [DEBUG] TestApp组件渲染开始');
+  
   return (
-    <Router 
-      basename={  // ✅ 修改2：添加basename配置
-        window.location.hostname.includes('github.io') 
-          ? '/medical-platform' 
-          : '/'
-      }
-    >
-      <div className="App" style={{ minHeight: '100vh' }}> {/* ✅ 修改3：确保最小高度 */}
-        <Routes>
-          {/* 登录页面（公共路由） */}
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <LoginPage onLogin={handleLogin} />
-              </PublicRoute>
-            } 
-          />
-          
-          {/* 主布局路由 */}
-          <Route 
-            path="/*" 
-            element={
-              <MainLayout user={user} onLogout={handleLogout} />
-            }
+    <div style={{ 
+      padding: '50px', 
+      textAlign: 'center', 
+      backgroundColor: '#f0f9ff',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center'
+    }}>
+      <div style={{
+        background: 'white',
+        padding: '40px',
+        borderRadius: '16px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+        maxWidth: '600px',
+        width: '100%'
+      }}>
+        <h1 style={{ 
+          color: '#10b981', 
+          fontSize: '2.5rem',
+          marginBottom: '20px'
+        }}>
+          ✅ 测试成功 - App组件渲染正常
+        </h1>
+        
+        <p style={{ 
+          fontSize: '1.2rem',
+          color: '#4b5563',
+          marginBottom: '30px'
+        }}>
+          如果看到这个页面，说明React Router和基础渲染正常
+        </p>
+        
+        <div style={{ 
+          marginTop: '30px', 
+          padding: '25px', 
+          background: '#f8fafc', 
+          borderRadius: '12px',
+          textAlign: 'left'
+        }}>
+          <h3 style={{ color: '#3b82f6', marginTop: 0 }}>调试信息：</h3>
+          <div style={{ fontFamily: 'monospace', fontSize: '14px' }}>
+            <p><strong>环境模式:</strong> {import.meta.env.MODE}</p>
+            <p><strong>Base URL:</strong> {import.meta.env.BASE_URL}</p>
+            <p><strong>当前时间:</strong> {new Date().toLocaleString()}</p>
+            <p><strong>页面URL:</strong> {window.location.href}</p>
+            <p><strong>Hash路由:</strong> {window.location.hash || '(空)'}</p>
+            <p><strong>用户代理:</strong> {navigator.userAgent.substring(0, 80)}...</p>
+          </div>
+        </div>
+        
+        <div style={{ marginTop: '40px' }}>
+          <button 
+            onClick={() => {
+              console.log('🔄 手动导航到 /test');
+              window.location.hash = '#/test';
+            }}
+            style={{
+              padding: '12px 24px',
+              background: '#3b82f6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              cursor: 'pointer',
+              marginRight: '10px'
+            }}
           >
-            <Route index element={<HomePage user={user} />} />
-            <Route path="cases" element={
-              <ProtectedRoute>
-                <CasesPage />
-              </ProtectedRoute>
-            } />
-            {/* 新增：创建医案独立页面 */}
-            <Route path="cases/create" element={
-              <ProtectedRoute>
-                <CreateCasePage />
-              </ProtectedRoute>
-            } />
-            <Route path="community" element={
-              <ProtectedRoute>
-                <CommunityPage />
-              </ProtectedRoute>
-            } />
-            <Route path="help" element={
-              <ProtectedRoute>
-                <HelpPage />
-              </ProtectedRoute>
-            } />
-            <Route path="messages" element={
-              <ProtectedRoute>
-                <MessagesPage />
-              </ProtectedRoute>
-            } />
-            <Route path="profile" element={
-              <ProtectedRoute>
-                <ProfilePage user={user} onUpdateUser={updateUser} />
-              </ProtectedRoute>
-            } />
-          </Route>
-
-          {/* 咨询详情独立页面 */}
-          <Route 
-            path="/consultation/:id" 
-            element={
-              <ProtectedRoute>
-                <ConsultationDetailPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* 默认重定向 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            测试路由跳转 (/test)
+          </button>
+          
+          <button 
+            onClick={() => {
+              console.log('🔍 检查localStorage');
+              console.log('localStorage:', Object.keys(localStorage));
+            }}
+            style={{
+              padding: '12px 24px',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '1rem',
+              cursor: 'pointer'
+            }}
+          >
+            检查存储
+          </button>
+        </div>
       </div>
-    </Router>
+      
+      <footer style={{ marginTop: '40px', color: '#6b7280', fontSize: '0.9rem' }}>
+        <p>众创医案平台 - 生产环境调试版本</p>
+        <p>构建时间: {new Date().toLocaleString()}</p>
+      </footer>
+    </div>
   );
 }
 
-export default App;
+function App() {
+  console.log('🧩 [DEBUG] App组件函数执行');
+  
+  // 使用极简配置，避免任何复杂逻辑
+  const basename = import.meta.env.BASE_URL || '/medical-platform/';
+  console.log('🧩 [DEBUG] Router basename:', basename);
+  
+  return (
+    <HashRouter basename={basename}>
+      <Routes>
+        {/* 测试路由 */}
+        <Route path="/test" element={
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <h2>路由测试页面</h2>
+            <p>路由跳转成功！</p>
+            <button onClick={() => window.history.back()}>返回</button>
+          </div>
+        } />
+        
+        {/* 主路由 - 使用测试组件 */}
+        <Route path="/*" element={<TestApp />} />
+      </Routes>
+    </HashRouter>
+  );
+}
+
+// 错误边界 - 捕获组件内错误
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '40px', color: 'red', textAlign: 'center' }}>
+          <h2>App组件内部错误</h2>
+          <pre>{this.state.error?.toString()}</pre>
+          <button onClick={() => window.location.reload()}>重新加载</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// 包装App组件
+export default function AppWrapper() {
+  console.log('🧩 [DEBUG] AppWrapper执行');
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
+  );
+}
+
+// 需要导入React
+import React from 'react';
