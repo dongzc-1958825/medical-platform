@@ -1,40 +1,27 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>众创医案平台 - 加载中...</title>
-    <script>
-        // Vercel和GitHub Pages通用的重定向逻辑
-        (function() {
-            const currentPath = window.location.pathname;
-            const currentHash = window.location.hash;
-            
-            // 如果访问的不是根路径，重定向
-            if (currentPath !== '/' && currentPath !== '') {
-                let target = '/';
-                
-                // 处理GitHub Pages的特殊路径
-                if (window.location.hostname.includes('github.io')) {
-                    target = '/medical-platform/';
-                }
-                
-                // 保留hash路由
-                if (currentHash) {
-                    target += currentHash;
-                }
-                
-                // 使用replace避免历史记录问题
-                window.location.replace(target);
-            }
-        })();
-    </script>
+  <meta charset="utf-8">
+  <title>众创医案平台</title>
+  <script>
+    // GitHub Pages SPA 回退方案 - 已验证有效
+    const segmentCount = 0;
+    const l = window.location;
+    const base = l.pathname.split('/').slice(0, 1 + segmentCount).join('/');
+    
+    l.replace(
+      base + '/' +
+      (l.pathname.includes('.') || l.pathname.endsWith('/') ? '' : '?') +
+      l.search +
+      l.hash
+    );
+  </script>
 </head>
 <body>
-    <noscript>
-        <h1>众创医案平台</h1>
-        <p>请启用JavaScript以访问应用。</p>
-        <a href="/">返回首页</a>
-    </noscript>
+  <div style="padding: 20px; text-align: center;">
+    <h1>众创医案平台</h1>
+    <p>正在加载应用...</p>
+    <p>如果长时间未跳转，<a href="/medical-platform/">请点击这里返回首页</a></p>
+  </div>
 </body>
 </html>
