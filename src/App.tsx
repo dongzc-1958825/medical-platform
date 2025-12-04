@@ -5,22 +5,49 @@ console.log('🧩 [DEBUG] 完整URL:', window.location.href);
 // ========== 调试代码结束 ==========
 
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import React from 'react';
 
 // 简单测试组件 - 不导入任何业务组件
 function TestApp() {
   console.log('🧩 [DEBUG] TestApp组件渲染开始');
+  console.log('🔍 [DEBUG] TestApp函数执行，准备返回JSX');
+  
+  // 添加渲染后的检查
+  React.useEffect(() => {
+    console.log('🔍 [DEBUG] TestApp组件挂载完成');
+    console.log('🔍 [DEBUG] 检查根元素内容:', document.getElementById('root')?.innerHTML?.substring(0, 200) + '...');
+    console.log('🔍 [DEBUG] 检查TestApp渲染的元素:', document.querySelector('[data-testid="test-app"]'));
+    
+    // 检查样式
+    const testAppElement = document.querySelector('[data-testid="test-app"]');
+    if (testAppElement) {
+      console.log('🔍 [DEBUG] TestApp元素找到，检查样式:');
+      console.log('- display:', window.getComputedStyle(testAppElement).display);
+      console.log('- visibility:', window.getComputedStyle(testAppElement).visibility);
+      console.log('- opacity:', window.getComputedStyle(testAppElement).opacity);
+      console.log('- height:', window.getComputedStyle(testAppElement).height);
+    } else {
+      console.error('🔍 [DEBUG] TestApp元素未找到！');
+    }
+  }, []);
   
   return (
-    <div style={{ 
-      padding: '50px', 
-      textAlign: 'center', 
-      backgroundColor: '#f0f9ff',
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center'
-    }}>
+    <div 
+      data-testid="test-app"
+      style={{ 
+        padding: '50px', 
+        textAlign: 'center', 
+        backgroundColor: '#f0f9ff',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        // 添加明显的边框确保可见
+        border: '10px solid red',
+        boxSizing: 'border-box'
+      }}
+    >
       <div style={{
         background: 'white',
         padding: '40px',
@@ -172,6 +199,3 @@ export default function AppWrapper() {
     </ErrorBoundary>
   );
 }
-
-// 需要导入React
-import React from 'react';
