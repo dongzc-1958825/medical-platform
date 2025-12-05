@@ -1,48 +1,12 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
 
-// https://vitejs.dev/config/
+// 最简配置，唯一目标：构建成功
 export default defineConfig({
   plugins: [react()],
-  
-  // 鍏抽敭淇锛歜ase璺緞閰嶇疆
-  base: process.env.NODE_ENV === 'production' ? '/medical-platform/' : '/',
-  
-  // 鏋勫缓閰嶇疆
+  base: "/medical-platform/", // 保持你的base
   build: {
-    // 鍏抽敭淇锛氳緭鍑虹洰褰曟敼涓篸ocs浠ュ吋瀹笹itHub Pages
-    outDir: 'docs',
-    
-    // 鍏朵粬浼樺寲閰嶇疆
-    sourcemap: false,
-    minify: 'esbuild',
-    target: 'esnext',
-    
-    // 绉婚櫎鏈夐棶棰樼殑鎵嬪姩鍒嗗潡锛岃Vite鑷姩浼樺寲
-    // rollupOptions: {
-    //   output: {
-    //     manualChunks: undefined // 璁￢ite鑷姩鍐冲畾鍒嗗潡绛栫暐
-    //   }
-    // }
-  },
-  
-  // 寮�鍙戞湇鍔″櫒閰嶇疆
-  server: {
-    port: 3000,
-    open: true,
-    host: true
-  },
-  
-  // 棰勮閰嶇疆
-  preview: {
-    port: 3000,
-    host: true
-  },
-  
-  // 瑙ｆ瀽閰嶇疆
-  resolve: {
-    alias: {
-      '@': '/src'
-    }
+    outDir: "docs"
+    // 移除所有复杂选项，让Vite使用默认值
   }
 })

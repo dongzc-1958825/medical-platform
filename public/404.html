@@ -1,42 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>医案平台</title>
-    <script>
-        // 立即重定向到应用首页
-        // 让 React Router 处理所有路由
-        const path = window.location.pathname;
-        const search = window.location.search;
-        const hash = window.location.hash;
-        
-        // 构建正确的应用URL
-        let appUrl = '/medical-platform/';
-        
-        // 如果当前路径不是根路径，添加路径参数
-        if (path && path !== '/' && path !== '/medical-platform/' && path !== '/medical-platform/index.html') {
-            // 提取应用内路径
-            let appPath = path.replace('/medical-platform', '');
-            if (appPath === '') appPath = '/';
-            appUrl += '?path=' + encodeURIComponent(appPath);
-        }
-        
-        // 保留其他URL参数和哈希
-        if (search && !appUrl.includes('?')) {
-            appUrl += search;
-        } else if (search) {
-            appUrl += '&' + search.slice(1);
-        }
-        appUrl += hash;
-        
-        console.log('404重定向: ', path, '→', appUrl);
-        window.location.replace(appUrl);
-    </script>
+  <meta charset="utf-8">
+  <title>众创医案平台</title>
+  <script>
+    // GitHub Pages SPA 回退方案 - 已验证有效
+    const segmentCount = 0;
+    const l = window.location;
+    const base = l.pathname.split('/').slice(0, 1 + segmentCount).join('/');
+    
+    l.replace(
+      base + '/' +
+      (l.pathname.includes('.') || l.pathname.endsWith('/') ? '' : '?') +
+      l.search +
+      l.hash
+    );
+  </script>
 </head>
 <body>
-    <noscript>
-        <p>请启用JavaScript或<a href="/medical-platform/">点击这里访问医案平台</a></p>
-    </noscript>
-    <p>正在跳转到医案平台...</p>
+  <div style="padding: 20px; text-align: center;">
+    <h1>众创医案平台</h1>
+    <p>正在加载应用...</p>
+    <p>如果长时间未跳转，<a href="/medical-platform/">请点击这里返回首页</a></p>
+  </div>
 </body>
 </html>
