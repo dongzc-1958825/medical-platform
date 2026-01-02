@@ -1,0 +1,263 @@
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+
+export interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: "patient" | "doctor" | "admin";
+  avatar?: string;
+  specialties?: string[];
+}
+
+export interface AuthContextType {
+  user: User | null;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  logout: () => void;
+  register: (userData: {
+    username: string;
+    email: string;
+    password: string;
+    role: "patient" | "doctor";
+    specialties?: string[];
+  }) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (userData: Partial<User>) => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const MOCK_USERS = [
+  {
+    id: "1",
+    username: "测试用户",
+    email: "test@example.com",
+    role: "patient" as const,
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=test"
+  },
+  {
+    id: "2",
+    username: "张医生",
+    email: "doctor@example.com",
+    role: "doctor" as const,
+    specialties: ["内科", "中医"],
+    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=doctor"
+  }
+];
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const savedUser = localStorage.getItem("medical-platform-user");
+        console.log('?? AuthContext - 加载用户，localStorage:', savedUser);
+        
+        if (savedUser) {
+          const parsedUser = JSON.parse(savedUser);
+          console.log('? AuthContext - 加载用户成功:', parsedUser.email);
+          setUser(parsedUser);
+        } else {
+          console.log('?? AuthContext - 没有保存的用户');
+        }
+      } catch (error) {
+        console.error("? AuthContext - 加载用户信息失败:", error);
+        localStorage.removeItem("medical-platform-user");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('?? AuthContext.login - 尝试登录:', email);
+      console.log('?? 输入密码:', password ? '已输入' : '未输入');
+      
+      // 1. 首先检查localStorage中注册的用户
+      const savedUser = localStorage.getItem("medical-platform-user");
+      console.log('?? AuthContext.login - 检查localStorage:', savedUser);
+      
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          console.log('?? AuthContext.login - 解析用户:', parsedUser.email);
+          
+          // 关键修复：检查邮箱是否匹配
+          if (parsedUser.email === email) {
+            console.log('? AuthContext.login - 找到匹配的注册用户');
+            // 对于注册的用户，密码应该与注册时的一致
+            // 但我们的register函数没有保存密码，所以暂时接受任何非空密码
+            if (password && password.trim() !== "") {
+              console.log('? AuthContext.login - 密码验证通过');
+              setUser(parsedUser);
+              // 确保用户数据保存
+              localStorage.setItem("medical-platform-user", JSON.stringify(parsedUser));
+              console.log('?? AuthContext.login - 用户状态已更新');
+              return { success: true };
+            } else {
+              console.log('? AuthContext.login - 密码为空');
+              return { 
+                success: false, 
+                message: "密码不能为空"
+              };
+            }
+          }
+        } catch (parseError) {
+          console.error('? AuthContext.login - 解析localStorage失败:', parseError);
+        }
+      }
+      
+      // 2. 然后检查MOCK_USERS（测试用户）
+      console.log('?? AuthContext.login - 检查MOCK_USERS...');
+      const foundUser = MOCK_USERS.find(u => u.email === email);
+      if (foundUser) {
+        console.log('? AuthContext.login - 找到MOCK用户:', foundUser.email);
+        // MOCK用户使用固定密码"123456"
+        if (password === "123456") {
+          console.log('? AuthContext.login - MOCK用户密码正确');
+          setUser(foundUser);
+          localStorage.setItem("medical-platform-user", JSON.stringify(foundUser));
+          return { success: true };
+        } else {
+          console.log('? AuthContext.login - MOCK用户密码错误');
+          return { 
+            success: false, 
+            message: "密码错误，测试账号请使用123456"
+          };
+        }
+      }
+      
+      console.log('? AuthContext.login - 未找到匹配的用户');
+      return { 
+        success: false, 
+        message: "邮箱或密码错误"
+      };
+    } catch (error) {
+      console.error('?? AuthContext.login - 登录过程异常:', error);
+      return { 
+        success: false, 
+        message: "登录失败，请检查网络连接"
+      };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const logout = () => {
+    console.log('?? AuthContext.logout - 用户退出');
+    setUser(null);
+    localStorage.removeItem("medical-platform-user");
+  };
+
+  const register = async (userData: {
+    username: string;
+    email: string;
+    password: string;
+    role: "patient" | "doctor";
+    specialties?: string[];
+  }) => {
+    setIsLoading(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      console.log('?? AuthContext.register - 开始注册:', userData.email);
+      console.log('?? 注册信息:', {
+        username: userData.username,
+        email: userData.email,
+        role: userData.role
+      });
+      
+      // 检查邮箱是否已被注册（先检查MOCK_USERS）
+      const emailExists = MOCK_USERS.some(u => u.email === userData.email);
+      if (emailExists) {
+        console.log('? AuthContext.register - 邮箱已被MOCK_USERS占用');
+        return { success: false, message: "该邮箱已被注册" };
+      }
+      
+      // 再检查localStorage中是否已存在
+      const savedUser = localStorage.getItem("medical-platform-user");
+      if (savedUser) {
+        try {
+          const parsedUser = JSON.parse(savedUser);
+          if (parsedUser.email === userData.email) {
+            console.log('? AuthContext.register - 邮箱已被localStorage占用');
+            return { success: false, message: "该邮箱已被注册" };
+          }
+        } catch (e) {
+          // 忽略解析错误
+        }
+      }
+      
+      const newUser: User = {
+        id: Date.now().toString(),
+        username: userData.username,
+        email: userData.email,
+        role: userData.role,
+        specialties: userData.specialties,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`
+      };
+      
+      console.log('? AuthContext.register - 创建新用户:', newUser);
+      
+      // 保存用户状态
+      setUser(newUser);
+      
+      // 保存到localStorage
+      localStorage.setItem("medical-platform-user", JSON.stringify(newUser));
+      
+      // 验证保存
+      const saved = localStorage.getItem("medical-platform-user");
+      console.log('?? AuthContext.register - 保存验证:', saved ? '成功' : '失败');
+      
+      return { success: true };
+    } catch (error) {
+      console.error('?? AuthContext.register - 注册失败:', error);
+      return { success: false, message: "注册失败，请稍后重试" };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateProfile = (userData: Partial<User>) => {
+    if (user) {
+      console.log('?? AuthContext.updateProfile - 更新用户信息');
+      const updatedUser = { ...user, ...userData };
+      setUser(updatedUser);
+      localStorage.setItem("medical-platform-user", JSON.stringify(updatedUser));
+    }
+  };
+
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    login,
+    logout,
+    register,
+    updateProfile
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth必须在AuthProvider内部使用");
+  }
+  return context;
+};
+
+// 关键修复：导出AuthContext变量，供shared/hooks/useAuth.ts使用
+export { AuthContext };

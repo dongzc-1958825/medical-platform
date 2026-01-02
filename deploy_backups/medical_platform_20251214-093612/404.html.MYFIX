@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>众创医案平台</title>
+  <script>
+    // GitHub Pages SPA 回退方案 - 已验证有效
+    const segmentCount = 0;
+    const l = window.location;
+    const base = l.pathname.split('/').slice(0, 1 + segmentCount).join('/');
+    
+    l.replace(
+      base + '/' +
+      (l.pathname.includes('.') || l.pathname.endsWith('/') ? '' : '?') +
+      l.search +
+      l.hash
+    );
+  </script>
+</head>
+<body>
+  <div style="padding: 20px; text-align: center;">
+    <h1>众创医案平台</h1>
+    <p>正在加载应用...</p>
+    <p>如果长时间未跳转，<a href="/medical-platform/">请点击这里返回首页</a></p>
+  </div>
+</body>
+</html>

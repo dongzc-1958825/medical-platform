@@ -1,0 +1,16 @@
+﻿// src/pages/mobile/MobileCasesPage.tsx
+import React from 'react';
+
+const MobileCasesPage: React.FC = () => {
+  return (
+    <div>
+      <h1 className="text-xl font-bold mb-4">医案中心</h1>
+      <div className="bg-white rounded-lg shadow p-4">
+        <p className="text-gray-600">这里是医案列表页面（移动端）</p>
+        <p className="text-gray-600 mt-2">路由路径：/mobile/cases</p>
+      </div>
+    </div>
+  );
+};
+
+export default MobileCasesPage;

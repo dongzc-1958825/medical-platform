@@ -1,0 +1,19 @@
+﻿🏥 众创医案平台 - 响应式Hooks修复前备份摘要
+==========================================
+备份时间: 2025-12-16 15:58:11
+备份类型: 响应式Hooks架构修复
+备份目录: 修复备份_响应式Hooks_20251216_155811
+备份文件数: 3
+
+备份的文件:
+• src/shared/hooks/useResponsive.ts • src/components/layout/MobileLayout.tsx • src/App.tsx
+
+修改说明:
+1. 创建/更新 useResponsive.ts - 响应式Hooks
+2. 创建 navigation.ts - 导航配置
+3. 更新 MobileLayout.tsx - 使用新Hooks
+4. 创建 device.ts - 设备检测工具
+5. 更新 App.tsx - 使用工具函数
+
+恢复命令:
+Copy-Item "修复备份_响应式Hooks_20251216_155811\*" "." -Recurse -Force

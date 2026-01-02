@@ -1,0 +1,80 @@
+﻿// src/App.tsx
+import React, { useEffect, useState } from 'react';
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import DesktopLayout from './components/layout/DesktopLayout';
+import MobileLayout from './components/layout/MobileLayout';
+import CasesPage from './pages/CasesPage';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import CommunityPage from './pages/CommunityPage';
+import MobileCasesPage from './pages/mobile/MobileCasesPage';
+import MobileLoginPage from './pages/mobile/MobileLoginPage';
+import NotFoundPage from './pages/NotFoundPage';
+import { AuthProvider } from './contexts/AuthContext';
+
+// 设备检测组件
+const DeviceRouter: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkDevice = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      
+      // 处理根路径重定向
+      if (location.pathname === '/') {
+        if (mobile) {
+          navigate('/mobile/cases', { replace: true });
+        } else {
+          navigate('/desktop/cases', { replace: true });
+        }
+      }
+    };
+
+    checkDevice();
+    window.addEventListener('resize', checkDevice);
+    
+    return () => window.removeEventListener('resize', checkDevice);
+  }, [location, navigate]);
+
+  return <>{children}</>;
+};
+
+function App() {
+  return (
+    <AuthProvider>
+      <Router>
+        <DeviceRouter>
+          <Routes>
+            {/* 桌面端路由 */}
+            <Route path="/desktop" element={<DesktopLayout />}>
+              <Route index element={<Navigate to="cases" replace />} />
+              <Route path="cases" element={<CasesPage />} />
+              <Route path="home" element={<HomePage />} />
+              <Route path="login" element={<LoginPage />} />
+              <Route path="community" element={<CommunityPage />} />
+            </Route>
+
+            {/* 移动端路由 */}
+            <Route path="/mobile" element={<MobileLayout />}>
+              <Route index element={<Navigate to="cases" replace />} />
+              <Route path="cases" element={<MobileCasesPage />} />
+              <Route path="login" element={<MobileLoginPage />} />
+              <Route path="community" element={<CommunityPage />} />
+            </Route>
+
+            {/* 根路径自动重定向 */}
+            <Route path="/" element={<Navigate to="/desktop/cases" replace />} />
+
+            {/* 404 回退 */}
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </DeviceRouter>
+      </Router>
+    </AuthProvider>
+  );
+}
+
+export default App;

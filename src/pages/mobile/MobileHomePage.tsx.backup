@@ -1,0 +1,302 @@
+import React from 'react';
+import { useNavigate, NavLink } from 'react-router-dom';
+import { useAuth } from '../../shared/hooks/useAuth';
+import { 
+  FileText,          // 医案分享
+  Stethoscope,       // 寻医问药
+  Users,             // 专病社区
+  MessageCircle,     // 消息中心
+  Bell,              // 通知
+  Calendar,          // 日历/日程
+  TrendingUp,        // 趋势/统计
+  BookOpen,          // 学习
+  Shield,            // 安全/隐私
+  Heart,             // 健康
+  Star,              // 收藏/推荐
+  ChevronRight       // 右箭头
+} from 'lucide-react';
+
+const MobileHomePage = () => {
+  const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
+
+  // 如果用户未登录，显示引导登录的首页
+  if (!user && !isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white p-6">
+        {/* Logo区域 */}
+        <div className="flex flex-col items-center justify-center py-12">
+          <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+            <span className="text-3xl font-bold text-blue-600">医</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">众创医案</h1>
+          <p className="text-gray-600 text-center mb-8">
+            医学专业人士的协作平台
+            <br />
+            分享案例，共同成长
+          </p>
+        </div>
+
+        {/* 功能介绍 */}
+        <div className="space-y-4 mb-12">
+          <div className="bg-white rounded-xl p-4 shadow-sm border">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                <FileText className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">医案分享</h3>
+                <p className="text-sm text-gray-500">浏览和分享真实医学案例</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm border">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                <Stethoscope className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">寻医问药</h3>
+                <p className="text-sm text-gray-500">向专业医生咨询建议</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl p-4 shadow-sm border">
+            <div className="flex items-center mb-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                <Users className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">专病社区</h3>
+                <p className="text-sm text-gray-500">参与专业疾病讨论</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 登录按钮 */}
+        <div className="fixed bottom-24 left-6 right-6">
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full bg-blue-600 text-white py-4 rounded-xl font-semibold text-lg shadow-lg hover:bg-blue-700 transition-colors"
+          >
+            立即登录/注册
+          </button>
+          <p className="text-center text-gray-500 text-sm mt-4">
+            登录后解锁全部功能
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // 用户已登录的首页
+  const today = new Date();
+  const formattedDate = `${today.getMonth() + 1}月${today.getDate()}日`;
+
+  // 核心功能入口
+  const coreFeatures = [
+    {
+      title: "医案分享",
+      description: "浏览和分享医学案例",
+      icon: <FileText className="w-6 h-6" />,
+      path: "/mobile/cases",
+      color: "bg-blue-100 text-blue-600 border-blue-200"
+    },
+    {
+      title: "寻医问药",
+      description: "向医生咨询专业建议",
+      icon: <Stethoscope className="w-6 h-6" />,
+      path: "/mobile/consultation",
+      color: "bg-green-100 text-green-600 border-green-200"
+    },
+    {
+      title: "专病社区",
+      description: "加入专业疾病讨论",
+      icon: <Users className="w-6 h-6" />,
+      path: "/mobile/community",
+      color: "bg-purple-100 text-purple-600 border-purple-200"
+    },
+    {
+      title: "消息中心",
+      description: "查看通知和私信",
+      icon: <MessageCircle className="w-6 h-6" />,
+      path: "/mobile/messages",
+      color: "bg-orange-100 text-orange-600 border-orange-200"
+    }
+  ];
+
+  // 快捷操作
+  const quickActions = [
+    {
+      title: "今日日程",
+      icon: <Calendar className="w-5 h-5" />,
+      count: 3,
+      color: "bg-blue-50 text-blue-700"
+    },
+    {
+      title: "待办事项",
+      icon: <Bell className="w-5 h-5" />,
+      count: 5,
+      color: "bg-red-50 text-red-700"
+    },
+    {
+      title: "收藏医案",
+      icon: <Star className="w-5 h-5" />,
+      count: 12,
+      color: "bg-yellow-50 text-yellow-700"
+    }
+  ];
+
+  // 推荐内容
+  const recommendations = [
+    {
+      title: "心血管疾病最新诊疗指南",
+      category: "心内科",
+      readTime: "10分钟"
+    },
+    {
+      title: "糖尿病管理实用技巧",
+      category: "内分泌科",
+      readTime: "8分钟"
+    },
+    {
+      title: "呼吸系统感染病例讨论",
+      category: "呼吸科",
+      readTime: "15分钟"
+    }
+  ];
+
+  return (
+    <div className="p-4 space-y-6">
+      {/* 欢迎区域 */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-5 text-white">
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-sm opacity-90">你好，</p>
+            <h1 className="text-2xl font-bold mt-1">{user?.name || '医生'}</h1>
+            <p className="text-sm opacity-90 mt-2">今天是 {formattedDate}</p>
+          </div>
+          <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+            <Heart className="w-8 h-8" />
+          </div>
+        </div>
+        <div className="mt-4 text-sm">
+          <p>🏥 今日在线医生：128人</p>
+          <p>📚 新增医案：24个</p>
+        </div>
+      </div>
+
+      {/* 核心功能入口 */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold text-gray-900">核心功能</h2>
+          <NavLink 
+            to="/mobile/cases"
+            className="text-sm text-blue-600 flex items-center"
+          >
+            全部 <ChevronRight className="w-4 h-4" />
+          </NavLink>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3">
+          {coreFeatures.map((feature, index) => (
+            <NavLink
+              key={index}
+              to={feature.path}
+              className={`flex flex-col items-center justify-center p-4 rounded-xl border ${feature.color} transition-all hover:scale-[1.02] active:scale-[0.98]`}
+            >
+              <div className="mb-2">
+                {feature.icon}
+              </div>
+              <h3 className="font-semibold text-center">{feature.title}</h3>
+              <p className="text-xs text-center opacity-75 mt-1">{feature.description}</p>
+            </NavLink>
+          ))}
+        </div>
+      </div>
+
+      {/* 快捷操作 */}
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">快捷操作</h2>
+        <div className="grid grid-cols-3 gap-3">
+          {quickActions.map((action, index) => (
+            <div 
+              key={index}
+              className={`flex flex-col items-center justify-center p-3 rounded-lg border ${action.color}`}
+            >
+              <div className="mb-2">
+                {action.icon}
+              </div>
+              <h3 className="text-sm font-medium text-center">{action.title}</h3>
+              <div className="mt-1 text-xs px-2 py-1 bg-white/50 rounded-full">
+                {action.count} 项
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 推荐阅读 */}
+      <div>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-bold text-gray-900">推荐阅读</h2>
+          <button className="text-sm text-gray-500 flex items-center">
+            更多 <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        <div className="space-y-3">
+          {recommendations.map((item, index) => (
+            <div 
+              key={index}
+              className="bg-white border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-gray-900 pr-2">{item.title}</h3>
+                <BookOpen className="w-5 h-5 text-gray-400 flex-shrink-0" />
+              </div>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span className="px-2 py-1 bg-gray-100 rounded-full">{item.category}</span>
+                <span>{item.readTime}阅读</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 统计数据 */}
+      <div className="bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold text-gray-900">本周数据</h3>
+          <TrendingUp className="w-5 h-5 text-green-500" />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-blue-600">42</p>
+            <p className="text-sm text-gray-600">医案浏览</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-green-600">8</p>
+            <p className="text-sm text-gray-600">参与讨论</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 底部安全提示 */}
+      <div className="text-center pt-4 pb-8 border-t border-gray-100">
+        <div className="flex items-center justify-center text-gray-500 text-sm mb-2">
+          <Shield className="w-4 h-4 mr-1" />
+          平台已通过医疗信息安全认证
+        </div>
+        <p className="text-xs text-gray-400">
+          患者隐私保护是我们的首要责任
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default MobileHomePage;

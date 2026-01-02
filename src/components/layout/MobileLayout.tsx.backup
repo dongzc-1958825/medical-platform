@@ -1,0 +1,36 @@
+﻿import React from 'react';
+import Logo from '../Logo/Logo';
+import { Outlet } from "react-router-dom";
+import MobileBottomNav from "./MobileBottomNav";
+
+// 定义组件属性类型
+interface MobileLayoutProps {
+  children?: React.ReactNode;
+}
+
+export default function MobileLayout({ children }: MobileLayoutProps) {
+  return (
+    <div className="mobile-layout min-h-screen bg-gray-50 safe-area">
+      <header className="bg-white shadow-sm px-4 py-3 sticky top-0 z-40">
+        {/* Logo */}
+        <div className="flex justify-center">
+          <Logo size="small" mobileSize="small" />
+        </div>
+        
+        {/* 移动端额外提示 - 可选，根据设计需求 */}
+        <div className="text-center text-xs text-gray-500 mt-1">
+          共享医学智慧
+        </div>
+      </header>
+
+      {/* 主要内容区域 */}
+      <main className="pb-16 min-h-[calc(100vh-8rem)] overflow-y-auto">
+        {/* 优先渲染 children，如果没有则渲染 Outlet */}
+        {children || <Outlet />}
+      </main>
+
+      {/* 底部导航 - 四大功能 */}
+      <MobileBottomNav />
+    </div>
+  );
+}

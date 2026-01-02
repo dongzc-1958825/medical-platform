@@ -1,0 +1,84 @@
+﻿{
+  "project_name": "众创医案平台",
+  "backup_type": "完整源代码备份",
+  "version": "3.0",
+  
+  "backup_categories": {
+    "核心配置文件": {
+      "patterns": [
+        "vite.config.js",
+        "vite.config.ts",
+        "package.json",
+        "package-lock.json",
+        "tsconfig.json",
+        "tsconfig.node.json",
+        "tailwind.config.js",
+        "postcss.config.js",
+        "index.html"
+      ]
+    },
+    
+    "路由与入口文件": {
+      "patterns": [
+        "src/main.tsx",
+        "src/main.ts",
+        "src/App.tsx",
+        "src/App.jsx"
+      ]
+    },
+    
+    "布局组件": {
+      "patterns": [
+        "src/components/layout/*.tsx",
+        "src/components/layout/*.ts",
+        "src/components/layout/*.jsx"
+      ]
+    },
+    
+    "页面文件": {
+      "patterns": [
+        "src/pages/**/*.tsx",
+        "src/pages/**/*.ts",
+        "src/pages/**/*.jsx"
+      ]
+    },
+    
+    "关键业务组件": {
+      "patterns": [
+        "src/components/auth/**/*",
+        "src/components/common/**/*",
+        "src/components/cards/**/*",
+        "src/components/BridgeShareModal.*",
+        "src/components/RealFileTransferModal.*"
+      ]
+    },
+    
+    "服务与上下文": {
+      "patterns": [
+        "src/services/**/*",
+        "src/contexts/**/*"
+      ]
+    },
+    
+    "类型定义": {
+      "patterns": [
+        "src/**/*.d.ts",
+        "src/vite-env.d.ts"
+      ]
+    }
+  },
+  
+  "exclude_patterns": [
+    "node_modules",
+    "dist",
+    "docs",
+    ".git",
+    "*.log",
+    "*.tmp",
+    "*backup*",
+    "*部署*",
+    ".vscode",
+    ".idea",
+    "*.map"
+  ]
+}

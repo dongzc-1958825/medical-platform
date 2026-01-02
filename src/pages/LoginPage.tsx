@@ -1,154 +1,293 @@
-// src/pages/LoginPage.tsx
-import React, { useState } from 'react';
-import { User } from '../types';
+﻿import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { isMobileDevice } from '../shared/utils/device'; // 添加设备检测导入
 
-interface LoginPageProps {
-  onLogin: (user: User) => void;
-  onCancel: () => void;
-}
-
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel }) => {
+const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, register, isLoading } = useAuth();
+  
+  const searchParams = new URLSearchParams(location.search);
+  const showRegisterFromUrl = searchParams.get('form') === 'register';
+  
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
-    username: '',  // 使用 username 字段
-    phone: '',
+    username: '',
+    email: '',
     password: '',
-    gender: 'male' as 'male' | 'female',
-    age: ''
+    confirmPassword: '',
+    phone: '',
   });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (showRegisterFromUrl) {
+      setIsLogin(false);
+    }
+  }, [showRegisterFromUrl]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 创建用户对象，确保字段匹配
-    const user: User = {
-      id: Date.now().toString(),
-      name: formData.username || formData.phone, // 使用 username 或 phone 作为 name
-      username: formData.username, // 保留 username 字段
-      email: `${formData.phone}@example.com`, // 临时邮箱
-      password: formData.password,
-      joinTime: new Date().toISOString(),
-      medicalCases: 0,
-      consultations: 0,
-      role: 'user',
-      isActive: true,
-      phone: formData.phone,
-      gender: formData.gender,
-      age: parseInt(formData.age) || 0
-    };
-    
-    onLogin(user);
+    setError('');
+    setSuccess('');
+
+    if (!isLogin) {
+      // 注册验证
+      if (!formData.username.trim()) {
+        setError('请输入用户名');
+        return;
+      }
+      if (!formData.email.trim()) {
+        setError('请输入邮箱');
+        return;
+      }
+      if (!formData.password.trim()) {
+        setError('请输入密码');
+        return;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('两次输入的密码不一致');
+        return;
+      }
+    }
+
+    if (!formData.email.trim() || !formData.password.trim()) {
+      setError('邮箱和密码不能为空');
+      return;
+    }
+
+    try {
+      if (isLogin) {
+        console.log('🔐 开始登录，邮箱:', formData.email);
+        
+        const result = await login(formData.email, formData.password);
+        console.log('📊 登录API返回结果:', result);
+        
+        if (result.success) {
+          console.log('🎉 登录成功！立即跳转到首页');
+          
+          // 关键修复：根据设备类型跳转
+          const isMobile = isMobileDevice();
+          const targetPath = isMobile ? '/mobile/home' : '/desktop/home';
+          
+          console.log(`📱 设备检测: ${isMobile ? '移动端' : '桌面端'}`);
+          console.log(`📍 跳转到: ${targetPath}`);
+          
+          navigate(targetPath, { replace: true });
+          
+          // 清空表单
+          setFormData({
+            username: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+            phone: '',
+          });
+          
+          // 立即返回，不执行后续代码
+          return;
+        } else {
+          console.log('❌ 登录失败:', result.message);
+          // 确保错误信息是字符串
+          setError(String(result.message || '登录失败'));
+        }
+      } else {
+        console.log('📝 开始注册，邮箱:', formData.email);
+        
+        const result = await register({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          role: 'patient', // 默认角色
+          specialties: [],
+        });
+        
+        console.log('📊 注册API返回结果:', result);
+        
+        if (result.success) {
+          setSuccess('注册成功！请登录');
+          setIsLogin(true); // 切换到登录表单
+          
+          // 保留邮箱，清空其他字段
+          setFormData({
+            username: '',
+            email: formData.email, // 保留注册的邮箱
+            password: '',
+            confirmPassword: '',
+            phone: '',
+          });
+        } else {
+          setError(String(result.message || '注册失败'));
+        }
+      }
+    } catch (err: any) {
+      console.error('💥 认证过程异常:', err);
+      // 安全地显示错误信息
+      const errorMsg = err?.message || err?.toString() || '操作失败，请重试';
+      setError(String(errorMsg).substring(0, 100));
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const toggleForm = () => {
+    setIsLogin(!isLogin);
+    setError('');
+    setSuccess('');
+    if (!isLogin) {
+      setFormData(prev => ({ ...prev, confirmPassword: '' }));
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-6">
-          {isLogin ? '登录' : '注册'}
-        </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                用户名
-              </label>
-              <input
-                type="text"
-                required={!isLogin}
-                value={formData.username}
-                onChange={(e) => setFormData({...formData, username: e.target.value})}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                placeholder="请输入用户名"
-              />
-            </div>
-          )}
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              手机号
-            </label>
-            <input
-              type="tel"
-              required
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-              placeholder="请输入手机号"
-            />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-lg shadow-md">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {isLogin ? '用户登录' : '用户注册'}
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            {isLogin ? '登录众创医案平台' : '创建新账户'}
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
+            {/* 关键修复：安全显示错误信息，避免问号 */}
+            {(() => {
+              try {
+                const errorStr = String(error);
+                // 只显示ASCII字符，避免乱码
+                return errorStr.replace(/[^\x00-\x7F]/g, '');
+              } catch {
+                return '操作失败';
+              }
+            })()}
           </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              密码
-            </label>
-            <input
-              type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-              placeholder="请输入密码"
-            />
+        )}
+
+        {success && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded text-sm">
+            {success}
           </div>
-          
-          {!isLogin && (
-            <>
+        )}
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          <div className="space-y-4">
+            {!isLogin && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  性别
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({...formData, gender: e.target.value as 'male' | 'female'})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="male">男</option>
-                  <option value="female">女</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  年龄
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  用户名
                 </label>
                 <input
-                  type="number"
+                  id="username"
+                  name="username"
+                  type="text"
                   required={!isLogin}
-                  value={formData.age}
-                  onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                  placeholder="请输入年龄"
+                  value={formData.username}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="请输入用户名"
                 />
               </div>
-            </>
-          )}
-          
-          <div className="flex space-x-3">
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                邮箱
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="请输入邮箱"
+              />
+            </div>
+
+            {!isLogin && (
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
+                  手机号（可选）
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="请输入手机号"
+                />
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                密码
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                placeholder="请输入密码"
+              />
+            </div>
+
+            {!isLogin && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                  确认密码
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required={!isLogin}
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="请再次输入密码"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
             <button
               type="submit"
-              className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+              disabled={isLoading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isLogin ? '登录' : '注册'}
+              {isLoading ? '处理中...' : (isLogin ? '登录' : '注册')}
             </button>
+          </div>
+
+          <div className="text-center">
             <button
               type="button"
-              onClick={onCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+              onClick={toggleForm}
+              className="text-sm text-blue-600 hover:text-blue-500"
             >
-              取消
+              {isLogin ? '没有账户？点击注册' : '已有账户？点击登录'}
             </button>
           </div>
         </form>
-        
-        <div className="mt-4 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-500 hover:text-blue-600 text-sm"
-          >
-            {isLogin ? '没有账号？立即注册' : '已有账号？立即登录'}
-          </button>
-        </div>
       </div>
     </div>
   );

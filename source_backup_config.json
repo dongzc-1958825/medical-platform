@@ -1,0 +1,81 @@
+﻿{
+  "project_name": "众创医案平台",
+  "backup_system_version": "2.0",
+  "last_updated": "2024-12-16",
+  
+  "critical_source_files": {
+    "configurations": [
+      "vite.config.ts",
+      "tsconfig.json",
+      "tsconfig.node.json",
+      "package.json",
+      "package-lock.json",
+      "tailwind.config.js",
+      "postcss.config.js",
+      "index.html"
+    ],
+    
+    "core_routing": [
+      "src/App.tsx",
+      "src/main.tsx",
+      "src/vite-env.d.ts"
+    ],
+    
+    "layout_components": [
+      "src/components/layout/",
+      "src/components/layout/*.tsx",
+      "src/components/layout/*.ts"
+    ],
+    
+    "business_pages": [
+      "src/pages/",
+      "src/pages/*.tsx",
+      "src/pages/mobile/",
+      "src/pages/mobile/*.tsx"
+    ],
+    
+    "core_services": [
+      "src/services/",
+      "src/services/*.tsx",
+      "src/services/*.ts"
+    ],
+    
+    "context_providers": [
+      "src/contexts/",
+      "src/contexts/*.tsx"
+    ],
+    
+    "critical_components": [
+      "src/components/auth/",
+      "src/components/common/",
+      "src/components/cards/",
+      "src/components/BridgeShareModal.tsx",
+      "src/components/RealFileTransferModal.tsx"
+    ]
+  },
+  
+  "backup_options": {
+    "quick": {
+      "description": "快速配置备份（修改配置前用）",
+      "includes": ["configurations", "core_routing"]
+    },
+    "full": {
+      "description": "完整源代码备份（里程碑用）",
+      "includes": ["configurations", "core_routing", "layout_components", "business_pages", "core_services", "context_providers", "critical_components"]
+    }
+  },
+  
+  "exclude_patterns": [
+    "node_modules",
+    ".git",
+    "*.log",
+    "*.tmp",
+    "*backup*",
+    "*部署*",
+    "dist",
+    ".vscode",
+    ".idea",
+    "*.map",
+    "*.d.ts"
+  ]
+}

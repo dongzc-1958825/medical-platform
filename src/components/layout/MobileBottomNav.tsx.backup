@@ -1,0 +1,65 @@
+﻿import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  FileText,      // 医案分享
+  Stethoscope,   // 寻医问药
+  Users,         // 专病社区
+  MessageCircle, // 消息中心
+  User           // 我的
+} from 'lucide-react';
+
+export default function MobileBottomNav() {
+  const navItems = [
+    { 
+      path: '/mobile/cases', 
+      label: '医案', 
+      icon: FileText 
+    },
+    { 
+      path: '/mobile/consult', 
+      label: '问药', 
+      icon: Stethoscope 
+    },
+    { 
+      path: '/mobile/community', 
+      label: '社区', 
+      icon: Users 
+    },
+    { 
+      path: '/mobile/messages', 
+      label: '消息', 
+      icon: MessageCircle 
+    },
+    { 
+      path: '/mobile/profile', 
+      label: '我的', 
+      icon: User 
+    }
+  ];
+
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+      <div className="flex justify-around items-center h-16">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              className={({ isActive }) =>
+                `flex flex-col items-center justify-center w-full h-full ${
+                  isActive 
+                    ? 'text-blue-600 font-medium' 
+                    : 'text-gray-500 hover:text-blue-500'
+                } transition-colors duration-200`
+              }
+            >
+              <Icon className="w-6 h-6 mb-1" />
+              <span className="text-xs">{item.label}</span>
+            </NavLink>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}

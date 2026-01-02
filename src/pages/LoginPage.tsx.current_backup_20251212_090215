@@ -1,0 +1,165 @@
+﻿import * as React from 'react';
+
+// src/pages/LoginPage.tsx
+
+
+import { User } from '../types';
+
+interface LoginPageProps {
+  onLogin: (user: User) => void;
+  onCancel: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    username: '',  // 浣跨敤 username 瀛楁
+    phone: '',
+    password: '',
+    gender: 'male' as 'male' | 'female',
+    age: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 鍒涘缓鐢ㄦ埛瀵硅薄锛岀‘淇濆瓧娈靛尮閰?User 绫诲瀷瀹氫箟
+    const user: User = {
+      id: Date.now().toString(),
+      username: formData.username || formData.phone, // 浣跨敤 username 鎴?phone 浣滀负 username
+      email: `${formData.phone}@example.com`, // 涓存椂閭
+      // 娉ㄦ剰锛歎ser 绫诲瀷涓病鏈?password 瀛楁锛屾墍浠ヤ笉鍖呭惈
+      createdAt: new Date().toISOString(),
+      // 鍙€夊瓧娈?
+      name: formData.username || formData.phone, // 浣跨敤 username 鎴?phone 浣滀负 name
+      phone: formData.phone,
+      gender: formData.gender,
+      // birthDate 鍙互鏍规嵁 age 璁＄畻锛屼絾杩欓噷绠€鍗曞鐞?
+      birthDate: formData.age ? calculateBirthDate(parseInt(formData.age)) : undefined
+    };
+    
+    onLogin(user);
+  };
+
+  // 杈呭姪鍑芥暟锛氭牴鎹勾榫勮绠楀嚭鐢熸棩鏈?
+  const calculateBirthDate = (age: number): string => {
+    const currentYear = new Date().getFullYear();
+    const birthYear = currentYear - age;
+    return `${birthYear}-01-01`; // 绠€鍖栧鐞嗭紝鍋囪1鏈?鏃ュ嚭鐢?
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg max-w-md w-full p-6">
+        <h2 className="text-xl font-bold mb-6">
+          {isLogin ? '鐧诲綍' : '娉ㄥ唽'}
+        </h2>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                鐢ㄦ埛鍚?
+              </label>
+              <input
+                type="text"
+                required={!isLogin}
+                value={formData.username}
+                onChange={(e) => setFormData({...formData, username: e.target.value})}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+                placeholder="璇疯緭鍏ョ敤鎴峰悕"
+              />
+            </div>
+          )}
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              鎵嬫満鍙?
+            </label>
+            <input
+              type="tel"
+              required
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+              placeholder="璇疯緭鍏ユ墜鏈哄彿"
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              瀵嗙爜
+            </label>
+            <input
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+              placeholder="璇疯緭鍏ュ瘑鐮?
+            />
+          </div>
+          
+          {!isLogin && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  鎬у埆
+                </label>
+                <select
+                  value={formData.gender}
+                  onChange={(e) => setFormData({...formData, gender: e.target.value as 'male' | 'female'})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="male">鐢?/option>
+                  <option value="female">濂?/option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  骞撮緞
+                </label>
+                <input
+                  type="number"
+                  required={!isLogin}
+                  value={formData.age}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+                  placeholder="璇疯緭鍏ュ勾榫?
+                />
+              </div>
+            </>
+          )}
+          
+          <div className="flex space-x-3">
+            <button
+              type="submit"
+              className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              {isLogin ? '鐧诲綍' : '娉ㄥ唽'}
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+            >
+              鍙栨秷
+            </button>
+          </div>
+        </form>
+        
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-blue-500 hover:text-blue-600 text-sm"
+          >
+            {isLogin ? '娌℃湁璐﹀彿锛熺珛鍗虫敞鍐? : '宸叉湁璐﹀彿锛熺珛鍗崇櫥褰?}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;

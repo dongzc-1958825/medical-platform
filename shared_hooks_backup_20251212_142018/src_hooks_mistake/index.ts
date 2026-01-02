@@ -1,0 +1,20 @@
+// Hooks 统一导出
+// 自动生成于 2025-12-12 13:38
+// 共 3 个hooks
+// 注意：所有hooks使用命名导出
+
+export { useApiCall } from './useApi';
+export { useCaseDetail } from './useCaseDetail';
+export { useMedicalCases } from './useMedicalCases';
+
+// 辅助函数
+export const getAllHooks = () => {
+  return {
+    useApiCall,
+    useCaseDetail,
+    useMedicalCases
+  };
+};
+
+// 类型重新导出
+export type { ApiHookOptions } from './useApi';

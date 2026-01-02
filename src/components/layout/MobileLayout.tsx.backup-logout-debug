@@ -1,0 +1,92 @@
+﻿import React from 'react';
+import { Outlet, NavLink } from 'react-router-dom';
+import { useAuth } from '../../shared/hooks/useAuth';
+import { LogOut, User as UserIcon } from 'lucide-react';
+import MobileBottomNav from './MobileBottomNav';
+import Logo from '../Logo/Logo';
+
+const MobileLayout = () => {
+  const { user, logout, isLoading } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('退出登录失败:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-gray-500">加载中...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* 顶部固定：众创医案平台 + 登录/注册 */}
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="text-lg font-bold text-blue-600">
+            众创医案平台
+          </div>
+          
+          <div className="flex items-center">
+            {user ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
+                  <UserIcon className="w-3.5 h-3.5 text-blue-600" />
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-xs text-gray-500 hover:text-red-600 px-1"
+                >
+                  退出
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <NavLink
+                  to="/login"
+                  className="text-sm text-blue-600 hover:text-blue-700 px-2"
+                >
+                  登录
+                </NavLink>
+                <span className="text-gray-300">|</span>
+                {/* 修改这里：添加查询参数 */}
+                <NavLink
+                  to="/login?form=register"
+                  className="text-sm text-blue-600 hover:text-blue-700 px-2"
+                >
+                  注册
+                </NavLink>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* 中部：Logo和"分享案例，健康管理" */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pt-12">
+        <div className="mb-6">
+          <Logo size="large" mobileSize="large" />
+        </div>
+        <div className="text-xl font-bold text-blue-600 text-center">
+          分享案例，健康管理
+        </div>
+      </div>
+
+      {/* 页面内容区域 */}
+      <div className="flex-1 px-4 pb-24">
+        <Outlet />
+      </div>
+
+      {/* 底部导航 */}
+      <MobileBottomNav />
+    </div>
+  );
+};
+
+export default MobileLayout;

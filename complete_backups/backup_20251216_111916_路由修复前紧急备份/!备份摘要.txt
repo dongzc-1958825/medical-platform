@@ -1,0 +1,25 @@
+﻿众创医案平台备份摘要
+==================
+备份时间: 2025-12-16 11:19:17
+备份标签: 路由修复前紧急备份
+备份文件数: 17
+备份目录: complete_backups\backup_20251216_111916_路由修复前紧急备份
+
+备份的文件:
+- vite.config.js
+- package.json
+- tsconfig.json
+- tailwind.config.js
+- index.html
+- src/App.tsx
+- src/main.tsx
+- src/components/layout/DesktopLayout.tsx
+- src/components/layout/MobileLayout.tsx
+- src/components/layout/MobileBottomNav.tsx
+- src/pages/HomePage.tsx
+- src/pages/CasesPage.tsx
+- src/pages/CommunityPage.tsx
+- src/pages/LoginPage.tsx
+- src/pages/ProfilePage.tsx
+- src/services/authService.tsx
+- src/contexts/AuthContext.tsx

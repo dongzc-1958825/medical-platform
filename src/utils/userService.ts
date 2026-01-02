@@ -1,4 +1,4 @@
-import { User, RegisterData, ForgotPasswordData } from '../types';
+﻿import { User, RegisterData, ForgotPasswordData } from '../types';
 
 // 模拟用户数据库
 const getUsers = (): User[] => {
@@ -22,30 +22,32 @@ export const initializeDefaultUsers = () => {
   
   if (existingDefaultUsers.length < defaultUsernames.length) {
     // 添加缺失的默认用户
-    const defaultUsers: User[] = [
-      {
-        id: '1',
-        username: 'doctor',
-        email: 'doctor@example.com',
-        password: '123456',
-        joinTime: new Date().toLocaleDateString(),
-        medicalCases: 3,
-        consultations: 2,
-        role: 'admin',
-        isActive: true
-      },
-      {
-        id: '2',
-        username: 'patient',
-        email: 'patient@example.com',
-        password: '123456',
-        joinTime: new Date().toLocaleDateString(),
-        medicalCases: 1,
-        consultations: 0,
-        role: 'user',
-        isActive: true
-      }
-    ];
+   const defaultUsers: User[] = [
+  {
+    id: '1',
+    username: 'doctor',
+    email: 'doctor@example.com',
+    password: '123456',
+    joinTime: new Date().toLocaleDateString(),
+    medicalCases: 3,
+    consultations: 2,
+    role: 'admin',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: '2',
+    username: 'patient',
+    email: 'patient@example.com',
+    password: '123456',
+    joinTime: new Date().toLocaleDateString(),
+    medicalCases: 1,
+    consultations: 0,
+    role: 'user',
+    isActive: true,
+    createdAt: new Date().toISOString()
+  }
+];
     
     // 只添加不存在的用户
     defaultUsers.forEach(defaultUser => {
@@ -81,7 +83,7 @@ export const registerUser = (registerData: RegisterData): { success: boolean; me
   console.log('注册时所有用户:', users); // 调试信息
   
   // 检查用户名是否已存在
-  if (users.find(u => u.username === registerData.username)) {
+ if (users.find(u => u.username === registerData.name)) {
     return { success: false, message: '用户名已存在' };
   }
   
@@ -97,16 +99,17 @@ export const registerUser = (registerData: RegisterData): { success: boolean; me
   
   // 创建新用户
   const newUser: User = {
-    id: Math.random().toString(36).substr(2, 9),
-    username: registerData.username,
-    email: registerData.email,
-    password: registerData.password,
-    joinTime: new Date().toLocaleDateString(),
-    medicalCases: 0,
-    consultations: 0,
-    role: 'user',
-    isActive: true
-  };
+  id: Math.random().toString(36).substr(2, 9),
+  username: registerData.name,
+  email: registerData.email,
+  password: registerData.password,
+  joinTime: new Date().toLocaleDateString(),
+  medicalCases: 0,
+  consultations: 0,
+  role: 'user',
+  isActive: true,
+  createdAt: new Date().toISOString()
+};
   
   users.push(newUser);
   saveUsers(users);
@@ -130,7 +133,7 @@ export const resetPassword = (forgotData: ForgotPasswordData): { success: boolea
     return { success: false, message: '密码确认不一致' };
   }
   
-  users[userIndex].password = forgotData.newPassword;
+  users[userIndex].password = forgotData.newPassword || '';
   saveUsers(users);
   console.log('重置密码后用户:', users[userIndex]); // 调试信息
   

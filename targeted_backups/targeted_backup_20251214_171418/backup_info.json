@@ -1,0 +1,8 @@
+﻿{
+    "files_skipped":  2,
+    "purpose":  "路由分离修复前的关键文件备份",
+    "files_backed_up":  11,
+    "backup_time":  "2025-12-14 17:14:18",
+    "notes":  "只备份即将修改的文件，避免不必要的存储",
+    "project":  "众创医案平台"
+}

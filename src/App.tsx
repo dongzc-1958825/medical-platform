@@ -1,182 +1,142 @@
-// src/App.tsx
-import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MainLayout from './components/MainLayout';
+﻿// src/App.tsx - 完整文件（修复DeviceRedirect部分）
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { isMobileDevice } from './shared/utils/device';
+import { AuthProvider } from './contexts/AuthContext';
+
+// Layouts
+import DesktopLayout from './components/layout/DesktopLayout';
+import MobileLayout from './components/layout/MobileLayout';
+
+// 主页面文件
 import HomePage from './pages/HomePage';
 import CasesPage from './pages/CasesPage';
-import CreateCasePage from './pages/CreateCasePage';
-import HelpPage from './pages/HelpPage';
+import ConsultationPage from './pages/ConsultationPage';
+import CommunityPage from './pages/CommunityPage';
 import MessagesPage from './pages/MessagesPage';
 import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
-import ConsultationDetailPage from './pages/ConsultationDetailPage';
-import CommunityPage from './pages/CommunityPage';
-import { User } from './types';
+
+// 移动端页面
+import MobileHomePage from './pages/mobile/MobileHomePage';
+import MobileCasesPage from './pages/mobile/MobileCasesPage';
+import MobileConsultPage from './pages/mobile/MobileConsultPage';
+import MobileCommunityPage from './pages/mobile/MobileCommunityPage';
+import MobileMessagesPage from './pages/mobile/MobileMessagesPage';
+import MobileProfilePage from './pages/mobile/MobileProfilePage';
+
+// 共享组件
+import AuthGuard from './components/auth/AuthGuard';
+
+// 设备重定向组件 - 修复版本
+const DeviceRedirect = () => {
+  // 使用正确的设备检测
+  const isMobile = isMobileDevice();
+  
+  // 添加日志便于调试
+  console.log('=== DeviceRedirect 执行 ===');
+  console.log('检测到设备:', isMobile ? '移动端' : '桌面端');
+  
+  if (isMobile) {
+    return <Navigate to="/mobile/home" replace />;
+  } else {
+    return <Navigate to="/desktop/home" replace />;
+  }
+};
+
+// 404页面组件
+const NotFoundPage = () => (
+  <div className="flex items-center justify-center h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="text-center">
+      <h1 className="text-3xl font-bold text-gray-800 mb-4">404 - 页面未找到</h1>
+      <p className="text-gray-600 mb-6">您访问的页面不存在</p>
+      <a 
+        href="/" 
+        className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        返回首页
+      </a>
+    </div>
+  </div>
+);
 
 function App() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // 检查本地存储中的用户登录状态
-  useEffect(() => {
-    const checkAuthStatus = () => {
-      try {
-        const token = localStorage.getItem('authToken');
-        const userData = localStorage.getItem('userData');
-        
-        console.log('检查认证状态:', { token, userData });
-        
-        if (token && userData) {
-          const parsedUser = JSON.parse(userData);
-          console.log('找到用户数据:', parsedUser);
-          setUser(parsedUser);
-        } else {
-          console.log('未找到认证信息，用户未登录');
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('检查认证状态时出错:', error);
-        // 清除可能损坏的数据
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userData');
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
-
-  // 处理用户登录
-  const handleLogin = (userData: User, token: string) => {
-    console.log('用户登录:', userData);
-    setUser(userData);
-    localStorage.setItem('authToken', token);
-    localStorage.setItem('userData', JSON.stringify(userData));
-  };
-
-  // 处理用户退出
-  const handleLogout = () => {
-    console.log('用户退出');
-    setUser(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userData');
-  };
-
-  // 更新用户信息
-  const updateUser = (updatedUser: User) => {
-    setUser(updatedUser);
-    localStorage.setItem('userData', JSON.stringify(updatedUser));
-  };
-
-  // 保护路由组件
-  const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      );
-    }
-    
-    return user ? <>{children}</> : <Navigate to="/login" replace />;
-  };
-
-  // 公共路由组件（已登录用户访问登录页时重定向）
-  const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    if (loading) {
-      return (
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      );
-    }
-    
-    return !user ? <>{children}</> : <Navigate to="/" replace />;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">加载中...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <Router>
-      <div className="App">
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
-          {/* 登录页面（公共路由） */}
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <LoginPage onLogin={handleLogin} />
-              </PublicRoute>
-            } 
-          />
-          
-          {/* 主布局路由 */}
-          <Route 
-            path="/*" 
-            element={
-              <MainLayout user={user} onLogout={handleLogout} />
-            }
-          >
-            <Route index element={<HomePage user={user} />} />
+          {/* 根路径重定向到设备对应页面 */}
+          <Route path="/" element={<DeviceRedirect />} />
+
+          {/* 登录页面 */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* 桌面端路由 */}
+          <Route path="/desktop" element={<DesktopLayout />}>
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<HomePage />} />
             <Route path="cases" element={
-              <ProtectedRoute>
+              <AuthGuard>
                 <CasesPage />
-              </ProtectedRoute>
+              </AuthGuard>
             } />
-            {/* 新增：创建医案独立页面 */}
-            <Route path="cases/create" element={
-              <ProtectedRoute>
-                <CreateCasePage />
-              </ProtectedRoute>
+            <Route path="consult" element={
+              <AuthGuard>
+                <ConsultationPage />
+              </AuthGuard>
             } />
             <Route path="community" element={
-              <ProtectedRoute>
+              <AuthGuard>
                 <CommunityPage />
-              </ProtectedRoute>
-            } />
-            <Route path="help" element={
-              <ProtectedRoute>
-                <HelpPage />
-              </ProtectedRoute>
+              </AuthGuard>
             } />
             <Route path="messages" element={
-              <ProtectedRoute>
+              <AuthGuard>
                 <MessagesPage />
-              </ProtectedRoute>
+              </AuthGuard>
             } />
             <Route path="profile" element={
-              <ProtectedRoute>
-                <ProfilePage user={user} onUpdateUser={updateUser} />
-              </ProtectedRoute>
+              <AuthGuard>
+                <ProfilePage />
+              </AuthGuard>
             } />
           </Route>
 
-          {/* 咨询详情独立页面 */}
-          <Route 
-            path="/consultation/:id" 
-            element={
-              <ProtectedRoute>
-                <ConsultationDetailPage />
-              </ProtectedRoute>
-            }
-          />
+          {/* 移动端路由 */}
+          <Route path="/mobile" element={<MobileLayout />}>
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<MobileHomePage />} />
+            <Route path="cases" element={
+              <AuthGuard>
+                <MobileCasesPage />
+              </AuthGuard>
+            } />
+            <Route path="consult" element={
+              <AuthGuard>
+                <MobileConsultPage />
+              </AuthGuard>
+            } />
+            <Route path="community" element={
+              <AuthGuard>
+                <MobileCommunityPage />
+              </AuthGuard>
+            } />
+            <Route path="messages" element={
+              <AuthGuard>
+                <MobileMessagesPage />
+              </AuthGuard>
+            } />
+            <Route path="profile" element={
+              <AuthGuard>
+                <MobileProfilePage />
+              </AuthGuard>
+            } />
+          </Route>
 
-          {/* 默认重定向 */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          {/* 404 页面 */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
-      </div>
-    </Router>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 

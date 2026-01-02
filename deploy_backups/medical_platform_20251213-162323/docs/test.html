@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    
+    <!-- 基础元数据 -->
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <meta name="theme-color" content="#2E8B57" />
+    
+    <!-- 搜索引擎优化 -->
+    <meta name="description" content="众创医案平台 - 中医医案共享与学习平台" />
+    <meta name="keywords" content="中医,医案,中医学习,中医案例,中医药" />
+    <meta name="author" content="众创医案团队" />
+    
+    <!-- PWA 配置 -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo-192x192.png" />
+    
+    <!-- iOS Safari 配置 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="众创医案" />
+    
+    <!-- Android Chrome 配置 -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Microsoft 配置 -->
+    <meta name="msapplication-TileColor" content="#2E8B57" />
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/logo-144x144.png" />
+    
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#2E8B57" />
+    <meta name="msapplication-navbutton-color" content="#2E8B57" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="#2E8B57" />
+    
+    <!-- 防止电话号码自动识别 -->
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- 开放图谱协议 (可选，用于社交媒体分享) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="众创医案平台" />
+    <meta property="og:description" content="中医医案共享与学习平台" />
+    <meta property="og:image" content="%PUBLIC_URL%/logo-512x512.png" />
+    <meta property="og:url" content="." />
+    
+    <!-- Twitter 卡片 (可选) -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="众创医案平台" />
+    <meta name="twitter:description" content="中医医案共享与学习平台" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/logo-512x512.png" />
+
+    <!-- 预加载关键资源 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- 安全策略 -->
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />
+    
+    <title>众创医案平台 - 中医医案共享与学习</title>
+    
+    <style>
+      /* 加载动画 */
+      #loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      }
+      
+      .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #2E8B57;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 16px;
+      }
+      
+      .loading-text {
+        color: #2E8B57;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      /* 隐藏加载动画 */
+      .loaded #loading {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>您需要启用 JavaScript 才能运行此应用程序。</noscript>
+    
+    <!-- 加载动画 -->
+    <div id="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">众创医案平台加载中...</div>
+    </div>
+    
+    <!-- React 应用根节点 -->
+    <div id="root"></div>
+    
+    <script>
+      // 页面加载完成后隐藏加载动画
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          document.body.classList.add('loaded');
+        }, 500);
+      });
+      
+      // 如果加载时间过长，也隐藏加载动画
+      setTimeout(function() {
+        document.body.classList.add('loaded');
+      }, 5000);
+      
+      // Service Worker 注册
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function(registration) {
+              console.log('SW registered: ', registration);
+            })
+            .catch(function(registrationError) {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+      
+      // 添加到主屏幕提示
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        // 可以在这里显示自定义的安装提示
+        console.log('应用可以安装到主屏幕');
+        
+        // 可选：显示安装按钮
+        // showInstallPromotion();
+      });
+    </script>
+  </body>
+</html>
