@@ -43,7 +43,7 @@ const Logo: React.FC<LogoProps> = ({ size = 'medium', mobileSize }) => {
         flex items-center justify-center
       `}>
         <img
-          src="/logo.png"
+          src="/medical-platform/logo.png"
           alt="众创医案平台Logo"
           className="h-full w-full object-contain"
         />
