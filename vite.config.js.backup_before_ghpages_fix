@@ -1,4 +1,4 @@
-// vite.config.js
+// vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -6,7 +6,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/medical-platform/', // 关键修复：适配 GitHub Pages 项目站点路径
+  base: '/', // 修改为根路径，确保路由正确
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
