@@ -100,7 +100,7 @@ const MobileLayout = () => {
                 </NavLink>
                 <span className="text-gray-300">|</span>
                 <NavLink
-                  to="#/login?form=register"  // 🎯 关键修改：添加#前缀
+                  to="/login?form=register"
                   className="text-sm text-blue-600 hover:text-blue-700 px-2"
                 >
                   注册

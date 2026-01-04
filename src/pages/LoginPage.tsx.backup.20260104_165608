@@ -19,24 +19,25 @@ const LoginPage = () => {
 
   // 根据URL参数设置表单模式
   useEffect(() => {
-    const hash = window.location.hash;
-    console.log('🔍 LoginPage - 解析URL参数...');
-    console.log('📍 当前哈希:', hash);
+    const searchParams = new URLSearchParams(location.search);
+    const formType = searchParams.get('form');
+    const fromParam = searchParams.get('from');
     
-    // 解析哈希中的参数
-    let formType = null;
-    if (hash.includes('?')) {
-      const [path, query] = hash.split('?');
-      const params = new URLSearchParams(query);
-      formType = params.get('form');
-      console.log('🎯 解析到form参数:', formType);
+    console.log('🔍 URL参数分析:', { formType, fromParam });
+    
+    if (formType === 'register') {
+      setIsRegister(true);
+      console.log('🎯 设置为注册模式');
+    } else {
+      setIsRegister(false);
+      console.log('🎯 设置为登录模式');
     }
     
-    // 设置注册模式
-    const shouldShowRegister = formType === 'register';
-    console.log('✅ 是否显示注册表单:', shouldShowRegister);
-    setIsRegister(shouldShowRegister);
-    
+    // 如果有成功消息，显示它
+    if (location.state?.message) {
+      setMessage(location.state.message);
+      setTimeout(() => setMessage(''), 3000);
+    }
   }, [location]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -45,21 +46,18 @@ const LoginPage = () => {
     setMessage('');
 
     try {
-      console.log('🔐 [LoginPage] 开始登录...');
-      const result = await login(email, password);
-      
-      if (result.success) {
-        console.log('✅ [LoginPage] 登录成功，执行智能重定向...');
+      const success = await login(username, password);
+      if (success) {
+        console.log('✅ 登录成功，执行智能重定向...');
         const redirectPath = getSmartRedirectPath();
         console.log(`📍 智能重定向目标: ${redirectPath}`);
         navigate(redirectPath);
       } else {
-        setError(result.message || '用户名或密码错误');
-        console.log('❌ [LoginPage] 登录失败:', result.message);
+        setError('用户名或密码错误');
       }
     } catch (err) {
       setError('登录失败，请重试');
-      console.error('[LoginPage] 登录错误:', err);
+      console.error('登录错误:', err);
     }
   };
 
@@ -85,46 +83,20 @@ const LoginPage = () => {
     }
 
     try {
-      console.log('📝 [LoginPage] 开始注册流程...');
-      
-      // 调用AuthContext的register
-      const result = await register({
-        username,
-        email,
-        password,
-        role: 'patient' // 默认角色为患者
-      });
-      
-      if (result.success) {
-        console.log('✅ [LoginPage] 注册成功，用户已自动登录');
-        
-        // 显示成功消息
-        setMessage('🎉 注册成功！正在进入系统...');
-        
-        // 🎯 关键修复：注册成功后自动重定向，不需要再次登录
-        // 因为AuthContext的register已经处理了登录状态
-        
-        // 验证状态
-        console.log('🔍 注册后验证状态:');
-        console.log('  localStorage current-user:', localStorage.getItem('medical-current-user'));
-        console.log('  localStorage registered-users:', localStorage.getItem('medical-registered-users'));
-        
-        // 短暂延迟后重定向（让用户看到成功消息）
-        setTimeout(() => {
-          console.log('🔄 [LoginPage] 注册成功后自动重定向');
-          const redirectPath = getSmartRedirectPath();
-          console.log(`📍 重定向到: ${redirectPath}`);
-          navigate(redirectPath);
-        }, 1500);
-        
+      const success = await register(username, password, email);
+      if (success) {
+        console.log('✅ 注册成功');
+        // 注册成功后的处理
+        setMessage('🎉 注册成功！请使用您的账号登录');
+        // 自动切换到登录表单，并预填用户名
+        setIsRegister(false);
+        // 不清除用户名，方便用户直接登录
       } else {
-        // 注册失败
-        setError(result.message || '注册失败，请重试');
-        console.log('❌ [LoginPage] 注册失败:', result.message);
+        setError('注册失败，用户名可能已存在');
       }
     } catch (err) {
       setError('注册失败，请重试');
-      console.error('[LoginPage] 注册错误:', err);
+      console.error('注册错误:', err);
     }
   };
 
@@ -345,14 +317,14 @@ const LoginPage = () => {
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                邮箱
+                用户名
               </label>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
-                placeholder="请输入邮箱"
+                placeholder="请输入用户名"
                 required
               />
             </div>
