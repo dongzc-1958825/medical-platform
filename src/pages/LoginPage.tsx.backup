@@ -1,159 +1,188 @@
-﻿// src/pages/LoginPage.tsx
-import * as React from 'react';
-import { useState } from 'react';
-import { User } from '../types';
+﻿import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/shared/hooks/useAuth';
+import { isMobileDevice } from '@/shared/utils/device';
+import { LogIn } from 'lucide-react';
 
-interface LoginPageProps {
-  onLogin: (user: User) => void;
-  onCancel: () => void;
-}
+const LoginPage = () => {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  const { login } = useAuth();
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onCancel }) => {
-  const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    username: '',  // 使用 username 字段
-    phone: '',
-    password: '',
-    gender: 'male' as 'male' | 'female',
-    age: ''
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // 创建用户对象，确保字段匹配 User 类型定义
-    const user: User = {
-      id: Date.now().toString(),
-      username: formData.username || formData.phone, // 使用 username 或 phone 作为 username
-      email: `${formData.phone}@example.com`, // 临时邮箱
-      // 注意：User 类型中没有 password 字段，所以不包含
-      createdAt: new Date().toISOString(),
-      // 可选字段
-      name: formData.username || formData.phone, // 使用 username 或 phone 作为 name
-      phone: formData.phone,
-      gender: formData.gender,
-      // birthDate 可以根据 age 计算，但这里简单处理
-      birthDate: formData.age ? calculateBirthDate(parseInt(formData.age)) : undefined
-    };
-    
-    onLogin(user);
+    setError('');
+
+    try {
+      const success = await login(username, password);
+      if (success) {
+        console.log('✅ 登录成功，执行智能重定向...');
+        
+        // 智能重定向逻辑
+        const redirectPath = getSmartRedirectPath();
+        console.log(`📍 智能重定向目标: ${redirectPath}`);
+        navigate(redirectPath);
+      } else {
+        setError('用户名或密码错误');
+      }
+    } catch (err) {
+      setError('登录失败，请重试');
+      console.error('登录错误:', err);
+    }
   };
 
-  // 辅助函数：根据年龄计算出生日期
-  const calculateBirthDate = (age: number): string => {
-    const currentYear = new Date().getFullYear();
-    const birthYear = currentYear - age;
-    return `${birthYear}-01-01`; // 简化处理，假设1月1日出生
+  /**
+   * 增强版智能重定向路径决策
+   * 优先级：哈希路径 > 来源参数 > 设备检测
+   */
+  const getSmartRedirectPath = () => {
+    const currentHash = window.location.hash;
+    console.log(`📍 当前哈希路径: ${currentHash}`);
+    
+    // 🔧 增强规则1：哈希路径识别（多种模式匹配）
+    if (currentHash) {
+      console.log('🔍 开始哈希路径分析...');
+      
+      // 🆕 重要修复：从哈希中提取URL参数
+      // 哈希格式可能是: #/login?from=/mobile/home 或 #/login?from=/desktop/home
+      const hashParts = currentHash.split('?');
+      if (hashParts.length > 1) {
+        const hashParams = new URLSearchParams(hashParts[1]);
+        const fromParam = hashParams.get('from');
+        if (fromParam) {
+          console.log(`📍 智能重定向规则1-0：哈希参数识别 "${fromParam}"`);
+          return fromParam;
+        }
+      }
+      
+      // 模式1：完整的移动端路径
+      if (currentHash.includes('#/mobile/')) {
+        console.log('📍 智能重定向规则1-1：完整移动端路径');
+        return '/mobile/home';
+      }
+      
+      // 模式2：从移动端页面来的登录（referrer分析）
+      const referrer = document.referrer;
+      console.log(`🔍 页面来源referrer: ${referrer}`);
+      if (referrer && referrer.includes('/mobile/')) {
+        console.log('📍 智能重定向规则1-2：来源页面为移动端');
+        return '/mobile/home';
+      }
+      
+      // 模式3：历史哈希记录（localStorage记录的上次访问设备）
+      try {
+        const lastDevice = localStorage.getItem('last-device-type');
+        console.log(`🔍 上次访问设备记录: ${lastDevice}`);
+        if (lastDevice === 'mobile') {
+          console.log('📍 智能重定向规则1-3：上次访问设备为移动端');
+          return '/mobile/home';
+        }
+      } catch (e) {
+        console.log('🔍 无法读取设备历史记录');
+      }
+    }
+    
+    // 🆕 规则2：修正来源参数识别（从location中获取）
+    // 注意：在HashRouter中，location.search可能是空的，但location.state可能有信息
+    const searchParams = new URLSearchParams(location.search);
+    const from = searchParams.get('from');
+    if (from) {
+      console.log(`📍 智能重定向规则2：来源参数 "${from}"`);
+      return from;
+    }
+    
+    // 检查location.state（如果有导航状态传递）
+    if (location.state && location.state.from) {
+      console.log(`📍 智能重定向规则2-2：导航状态来源 "${location.state.from}"`);
+      return location.state.from;
+    }
+    
+    // 规则3：设备检测（新增设备类型记录）
+    if (isMobileDevice()) {
+      console.log('📍 智能重定向规则3：设备检测为移动端');
+      // 记录设备类型，供下次参考
+      try {
+        localStorage.setItem('last-device-type', 'mobile');
+      } catch (e) {
+        // 忽略localStorage错误
+      }
+      return '/mobile/home';
+    } else {
+      console.log('📍 智能重定向规则3：设备检测为桌面端');
+      // 记录设备类型，供下次参考
+      try {
+        localStorage.setItem('last-device-type', 'desktop');
+      } catch (e) {
+        // 忽略localStorage错误
+      }
+      return '/desktop/home';
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <h2 className="text-xl font-bold mb-6">
-          {isLogin ? '登录' : '注册'}
-        </h2>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                用户名
-              </label>
-              <input
-                type="text"
-                required={!isLogin}
-                value={formData.username}
-                onChange={(e) => setFormData({...formData, username: e.target.value})}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                placeholder="请输入用户名"
-              />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+      <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <div className="bg-blue-100 p-3 rounded-full">
+              <LogIn className="w-10 h-10 text-blue-600" />
+            </div>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">欢迎回来</h1>
+          <p className="text-gray-600">登录您的医疗知识平台账户</p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+              {error}
             </div>
           )}
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              手机号
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              用户名
             </label>
             <input
-              type="tel"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+              placeholder="请输入用户名"
               required
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-              placeholder="请输入手机号"
             />
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               密码
             </label>
             <input
               type="password"
-              required
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
               placeholder="请输入密码"
+              required
             />
           </div>
-          
-          {!isLogin && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  性别
-                </label>
-                <select
-                  value={formData.gender}
-                  onChange={(e) => setFormData({...formData, gender: e.target.value as 'male' | 'female'})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                >
-                  <option value="male">男</option>
-                  <option value="female">女</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  年龄
-                </label>
-                <input
-                  type="number"
-                  required={!isLogin}
-                  value={formData.age}
-                  onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-500"
-                  placeholder="请输入年龄"
-                />
-              </div>
-            </>
-          )}
-          
-          <div className="flex space-x-3">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              {isLogin ? '登录' : '注册'}
-            </button>
-            <button
-              type="button"
-              onClick={onCancel}
-              className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-            >
-              取消
-            </button>
-          </div>
-        </form>
-        
-        <div className="mt-4 text-center">
+
           <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-500 hover:text-blue-600 text-sm"
+            type="submit"
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:opacity-90 transition disabled:opacity-50"
           >
-            {isLogin ? '没有账号？立即注册' : '已有账号？立即登录'}
+            登录
           </button>
+        </form>
+
+        <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+          <p className="text-gray-600 text-sm">
+            医疗知识共享平台 · 安全登录系统
+          </p>
         </div>
       </div>
     </div>

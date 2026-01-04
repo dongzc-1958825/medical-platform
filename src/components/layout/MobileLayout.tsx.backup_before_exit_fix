@@ -1,5 +1,5 @@
 ﻿import React from 'react';
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Outlet, NavLink, useLocation } from 'react-router-dom'; // 添加useLocation
 import { useAuth } from '../../shared/hooks/useAuth';
 import { LogOut, User as UserIcon } from 'lucide-react';
 import MobileBottomNav from './MobileBottomNav';
@@ -7,56 +7,40 @@ import Logo from '../Logo/Logo';
 
 const MobileLayout = () => {
   const { user, logout, isLoading } = useAuth();
-  const location = useLocation();
+  const location = useLocation(); // 获取当前路径
   
+  // 判断是否应该显示Logo区域
+  // 首页显示Logo，其他功能页面不显示
   const shouldShowLogo = location.pathname === '/mobile/home';
   
   console.log('📍 MobileLayout - 当前路径:', location.pathname);
   console.log('🎨 是否显示Logo:', shouldShowLogo);
 
   const handleLogout = async () => {
-    console.log('🚨 [原子化退出] 开始');
-    console.log('🔗 退出后将重定向到移动端登录页');
-    
-    // 步骤0: 立即禁用按钮，防止重复点击
-    const logoutBtn = document.querySelector('button[onClick*="handleLogout"]');
-    if (logoutBtn) logoutBtn.setAttribute('disabled', 'true');
+    console.log('🚪 MobileLayout: 开始退出流程');
+    console.log('👤 当前用户:', user?.email);
     
     try {
-      // 步骤1: 同步、立即清理最顶层的认证状态 (不等待异步)
-      console.log('⚡ [原子化退出] 步骤1: 同步清除AuthContext');
-      localStorage.removeItem('current-user'); // 先清除存储
+      // 1. 清理React认证状态
+      await logout();
+      console.log('✅ AuthContext状态已清理');
       
-      // 🎯 关键修复：退出时添加来源参数，告诉登录页"我从移动端来"
-      console.log('⚡ [原子化退出] 步骤2: 强制哈希跳转到 #/login?from=/mobile/home');
-      window.location.hash = '#/login?from=/mobile/home';
+      // 2. 关键修复：立即同步重置哈希路由到移动端首页
+      // 这能确保刷新前，浏览器地址处于一个公开、可访问的路由
+      window.location.hash = '#/mobile/home';
+      console.log('✅ 哈希路由已重置为 #/mobile/home');
       
-      // 步骤3: 短暂延迟，确保浏览器已处理哈希跳转，再调用React的logout更新UI状态
-      setTimeout(async () => {
-        try {
-          console.log('⚡ [原子化退出] 步骤3: 调用React Context的logout');
-          await logout(); // 此时调用，用于更新React组件状态，但已无存储冲突
-          
-          // 步骤4: 最终安全跳转，确保在登录页（带参数）
-          setTimeout(() => {
-            const currentHash = window.location.hash;
-            if (!currentHash.includes('#/login')) {
-              console.warn('⚠️ 哈希未稳定在#/login，执行最终修正');
-              window.location.hash = '#/login?from=/mobile/home';
-            }
-            console.log('✅ [原子化退出] 序列完成');
-          }, 50);
-        } catch (innerError) {
-          console.error('❌ React状态更新失败:', innerError);
-          // 即使失败，用户也已在登录页，UI可能不一致但可操作
-        }
-      }, 100); // 关键延迟，让哈希跳转先行
+      // 3. 短暂延迟后刷新页面，让一切从干净状态开始
+      setTimeout(() => {
+        console.log('🔄 执行页面刷新...');
+        window.location.reload();
+      }, 150); // 比之前稍长，确保哈希路由设置完毕
       
-    } catch (outerError) {
-      console.error('❌ [原子化退出] 主流程失败:', outerError);
-      // 终极后备：重载到根路径（带参数）
-      const baseUrl = window.location.origin + window.location.pathname;
-      window.location.href = baseUrl + '#/login?from=/mobile/home';
+    } catch (error) {
+      console.error('❌ MobileLayout: 退出过程出错:', error);
+      // 即使出错，也尝试重置路由并刷新
+      window.location.hash = '#/mobile/home';
+      setTimeout(() => window.location.reload(), 150);
     }
   };
 
