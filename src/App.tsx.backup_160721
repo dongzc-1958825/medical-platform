@@ -1,0 +1,97 @@
+﻿// src/App.tsx - 切换为 HashRouter 版本
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // 关键修改
+import { isMobileDevice } from './shared/utils/device';
+import { AuthProvider } from './contexts/AuthContext';
+
+// Layouts (保持不变)
+import DesktopLayout from './components/layout/DesktopLayout';
+import MobileLayout from './components/layout/MobileLayout';
+
+// 主页面文件 (保持不变)
+import HomePage from './pages/HomePage';
+import CasesPage from './pages/CasesPage';
+import ConsultationPage from './pages/ConsultationPage';
+import CommunityPage from './pages/CommunityPage';
+import MessagesPage from './pages/MessagesPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+
+// 移动端页面 (保持不变)
+import MobileHomePage from './pages/mobile/MobileHomePage';
+import MobileCasesPage from './pages/mobile/MobileCasesPage';
+import MobileConsultPage from './pages/mobile/MobileConsultPage';
+import MobileCommunityPage from './pages/mobile/MobileCommunityPage';
+import MobileMessagesPage from './pages/mobile/MobileMessagesPage';
+import MobileProfilePage from './pages/mobile/MobileProfilePage';
+
+// 共享组件 (保持不变)
+import AuthGuard from './components/auth/AuthGuard';
+
+// 设备重定向组件 - 简化版本 (因为HashRouter能正确处理hash)
+const DeviceRedirect = () => {
+  const isMobile = isMobileDevice();
+  console.log('[DeviceRedirect] 设备检测:', isMobile ? '移动端' : '桌面端');
+  const targetPath = isMobile ? '/mobile/home' : '/desktop/home';
+  console.log('[DeviceRedirect] 重定向到:', targetPath);
+  return <Navigate to={targetPath} replace />;
+};
+
+// 404页面组件 (保持不变)
+const NotFoundPage = () => (
+  <div className="flex items-center justify-center h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="text-center">
+      <h1 className="text-3xl font-bold text-gray-800 mb-4">404 - 页面未找到</h1>
+      <p className="text-gray-600 mb-6">您访问的页面不存在</p>
+      <a 
+        href="#/"  // 注意：HashRouter下首页链接是 #/
+        className="inline-block bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        返回首页
+      </a>
+    </div>
+  </div>
+);
+
+function App() {
+  return (
+    // 关键修改：将 BrowserRouter 替换为 Router (即HashRouter)
+    <Router> 
+      <AuthProvider>
+        <Routes>
+          {/* 根路径重定向到设备对应页面 */}
+          <Route path="/" element={<DeviceRedirect />} />
+
+          {/* 登录页面 */}
+          <Route path="/login" element={<LoginPage />} />
+
+          {/* 桌面端路由 */}
+          <Route path="/desktop" element={<DesktopLayout />}>
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<HomePage />} />
+            <Route path="cases" element={<AuthGuard><CasesPage /></AuthGuard>} />
+            <Route path="consult" element={<AuthGuard><ConsultationPage /></AuthGuard>} />
+            <Route path="community" element={<AuthGuard><CommunityPage /></AuthGuard>} />
+            <Route path="messages" element={<AuthGuard><MessagesPage /></AuthGuard>} />
+            <Route path="profile" element={<AuthGuard><ProfilePage /></AuthGuard>} />
+          </Route>
+
+          {/* 移动端路由 */}
+          <Route path="/mobile" element={<MobileLayout />}>
+            <Route index element={<Navigate to="home" replace />} />
+            <Route path="home" element={<MobileHomePage />} />
+            <Route path="cases" element={<AuthGuard><MobileCasesPage /></AuthGuard>} />
+            <Route path="consult" element={<AuthGuard><MobileConsultPage /></AuthGuard>} />
+            <Route path="community" element={<AuthGuard><MobileCommunityPage /></AuthGuard>} />
+            <Route path="messages" element={<AuthGuard><MobileMessagesPage /></AuthGuard>} />
+            <Route path="profile" element={<AuthGuard><MobileProfilePage /></AuthGuard>} />
+          </Route>
+
+          {/* 404 页面 */}
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AuthProvider>
+    </Router> // 关键修改
+  );
+}
+
+export default App;

@@ -1,19 +1,23 @@
-// vite.config.js
-import { defineConfig } from 'vite'
+ï»¿import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/medical-platform/', // ¹Ø¼üĞŞ¸´£ºÊÊÅä GitHub Pages ÏîÄ¿Õ¾µãÂ·¾¶
+  base: '/medical-platform/', // å…³é”®ä¿®å¤ï¼šé€‚é… GitHub Pages é¡¹ç›®ç«™ç‚¹è·¯å¾„
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@components': path.resolve(__dirname, './src/components'),
+      '@pages': path.resolve(__dirname, './src/pages'),
+      '@types': path.resolve(__dirname, './src/types'),
+      '@utils': path.resolve(__dirname, './src/utils'),
+      '@assets': path.resolve(__dirname, './src/assets'),
     },
   },
   build: {
-    outDir: 'docs', // GitHub Pages ²¿ÊğÄ¿Â¼
+    outDir: 'docs', // GitHub Pages éƒ¨ç½²ç›®å½•
     sourcemap: false,
   },
   server: {

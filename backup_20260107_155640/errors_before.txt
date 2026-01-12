@@ -1,0 +1,165 @@
+﻿src/App.tsx(36,11): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(41,4): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(42,6): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(43,8): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(44,8): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(45,8): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(58,6): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(59,8): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(60,10): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(62,12): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(62,37): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(65,12): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(65,42): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(68,12): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(68,44): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(69,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(69,36): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(70,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(70,42): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(71,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(71,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(71,54): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(72,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(72,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(72,56): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(73,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(73,47): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(73,58): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(74,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(74,46): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(74,57): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(75,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(75,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(75,56): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(79,12): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(79,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(80,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(80,36): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(81,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(81,42): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(82,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(82,43): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(82,54): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(83,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(83,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(83,56): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(84,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(84,47): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(84,58): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(85,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(85,46): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(85,57): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(86,14): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(86,45): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(86,56): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(90,12): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/App.tsx(90,37): error TS2686: 'React' refers to a UMD global, but the current file is a module. Consider adding an import instead.
+src/components/layout/MobileLayout.tsx(4,10): error TS6133: 'LogOut' is declared but its value is never read.
+src/data/IMedicalDataRepository.ts(23,8): error TS2307: Cannot find module '@/shared/types/message' or its corresponding type declarations.
+src/data/IMedicalDataRepository.ts(465,17): error TS2323: Cannot redeclare exported variable 'createDefaultLocalStorageConfig'.
+src/data/IMedicalDataRepository.ts(478,17): error TS2323: Cannot redeclare exported variable 'createDefaultIndexedDBConfig'.
+src/data/IMedicalDataRepository.ts(499,17): error TS2323: Cannot redeclare exported variable 'validatePostData'.
+src/data/IMedicalDataRepository.ts(545,17): error TS2323: Cannot redeclare exported variable 'generatePostId'.
+src/data/IMedicalDataRepository.ts(554,17): error TS2323: Cannot redeclare exported variable 'calculateEstimatedValueScore'.
+src/data/IMedicalDataRepository.ts(598,3): error TS2323: Cannot redeclare exported variable 'validatePostData'.
+src/data/IMedicalDataRepository.ts(598,3): error TS2484: Export declaration conflicts with exported declaration of 'validatePostData'.
+src/data/IMedicalDataRepository.ts(599,3): error TS2323: Cannot redeclare exported variable 'generatePostId'.
+src/data/IMedicalDataRepository.ts(599,3): error TS2484: Export declaration conflicts with exported declaration of 'generatePostId'.
+src/data/IMedicalDataRepository.ts(600,3): error TS2323: Cannot redeclare exported variable 'calculateEstimatedValueScore'.
+src/data/IMedicalDataRepository.ts(600,3): error TS2484: Export declaration conflicts with exported declaration of 'calculateEstimatedValueScore'.
+src/data/IMedicalDataRepository.ts(601,3): error TS2323: Cannot redeclare exported variable 'createDefaultLocalStorageConfig'.
+src/data/IMedicalDataRepository.ts(601,3): error TS2484: Export declaration conflicts with exported declaration of 'createDefaultLocalStorageConfig'.
+src/data/IMedicalDataRepository.ts(602,3): error TS2323: Cannot redeclare exported variable 'createDefaultIndexedDBConfig'.
+src/data/IMedicalDataRepository.ts(602,3): error TS2484: Export declaration conflicts with exported declaration of 'createDefaultIndexedDBConfig'.
+src/pages/CasesPage.tsx(7,24): error TS6133: 'Eye' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,29): error TS6133: 'Heart' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,36): error TS6133: 'Share2' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,44): error TS6133: 'Building' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,54): error TS6133: 'User' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,60): error TS6133: 'Calendar' is declared but its value is never read.
+src/pages/CasesPage.tsx(7,70): error TS6133: 'MapPin' is declared but its value is never read.
+src/pages/CasesPage.tsx(10,7): error TS7034: Variable 'mockCases' implicitly has type 'any[]' in some locations where its type cannot be determined.
+src/pages/CasesPage.tsx(32,19): error TS6133: 'onView' is declared but its value is never read.
+src/pages/CasesPage.tsx(32,35): error TS6133: 'onShare' is declared but its value is never read.
+src/pages/CasesPage.tsx(36,9): error TS6133: 'handleLike' is declared but its value is never read.
+src/pages/CasesPage.tsx(51,38): error TS7005: Variable 'mockCases' implicitly has an 'any[]' type.
+src/pages/CasesPage.tsx(93,24): error TS7005: Variable 'mockCases' implicitly has an 'any[]' type.
+src/pages/ConsultationPage.tsx(45,9): error TS6133: 'isDesktop' is declared but its value is never read.
+src/pages/ConsultPage.tsx(11,6): error TS2559: Type '{ children: Element; }' has no properties in common with type 'IntrinsicAttributes'.
+src/pages/LoginPage.tsx(2,36): error TS6133: 'Link' is declared but its value is never read.
+src/pages/LoginPage.tsx(29,14): error TS6133: 'path' is declared but its value is never read.
+src/pages/mobile/MobileCasesPage.tsx(391,10): error TS6133: 'activeTab' is declared but its value is never read.
+src/pages/mobile/MobileCasesPage.tsx(391,21): error TS6133: 'setActiveTab' is declared but its value is never read.
+src/pages/mobile/MobileMessagesPage.tsx(123,30): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+src/pages/mobile/MobileMessagesPage.tsx.backup-remove-mobilelayout-20260101-151831.tsx(5,62): error TS6133: 'Filter' is declared but its value is never read.
+src/pages/mobile/MobileMessagesPage.tsx.backup-remove-mobilelayout-20260101-151831.tsx(47,8): error TS2559: Type '{ children: Element; }' has no properties in common with type 'IntrinsicAttributes'.
+src/pages/mobile/MobileMessagesPage.tsx.backup-remove-mobilelayout-20260101-151831.tsx(57,8): error TS2559: Type '{ children: Element; }' has no properties in common with type 'IntrinsicAttributes'.
+src/pages/mobile/MobileMessagesPage.tsx.backup-remove-mobilelayout-20260101-151831.tsx(78,6): error TS2559: Type '{ children: Element; }' has no properties in common with type 'IntrinsicAttributes'.
+src/pages/mobile/MobileMessagesPage.tsx.backup-remove-mobilelayout-20260101-151831.tsx(124,32): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+src/pages/mobile/MobileMessagesPage.tsx.backup-vertical-layout-20260101-152855.tsx(131,30): error TS7053: Element implicitly has an 'any' type because expression of type 'string' can't be used to index type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+  No index signature with a parameter of type 'string' was found on type '{ drug: { icon: string; label: string; count: number; color: string; }; article: { icon: string; label: string; count: number; color: string; }; announcement: { icon: string; label: string; count: number; color: string; }; effect: { ...; }; warning: { ...; }; }'.
+src/pages/mobile/MobileProfilePage.tsx(10,17): error TS6133: 'logout' is declared but its value is never read.
+src/pages/ProfilePage.tsx(238,27): error TS2339: Property 'name' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(238,40): error TS2339: Property 'displayName' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(252,21): error TS2339: Property 'medicalLicense' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(258,27): error TS2339: Property 'medicalLicense' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(278,26): error TS2339: Property 'isDoctor' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(282,27): error TS2339: Property 'isDoctor' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(287,21): error TS2339: Property 'specialty' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(295,35): error TS2339: Property 'specialty' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(302,29): error TS2339: Property 'specialty' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(308,21): error TS2339: Property 'bio' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(315,35): error TS2339: Property 'bio' does not exist on type 'User'.
+src/pages/ProfilePage.tsx(323,29): error TS2339: Property 'bio' does not exist on type 'User'.
+src/pages_backup/desktop_pages_backup_20260101_173943/CasesPage.tsx(2,27): error TS2307: Cannot find module '../components/layout/DesktopLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/CasesPage.tsx(3,26): error TS2307: Cannot find module '../components/layout/MobileLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/CasesPage.tsx(4,31): error TS2307: Cannot find module '../shared/hooks/useResponsive' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationDetailPage.tsx(3,36): error TS2307: Cannot find module '../types/consultation' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationDetailPage.tsx(4,37): error TS2307: Cannot find module '../services/consultationService' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationDetailPage.tsx(171,31): error TS7006: Parameter 'reply' implicitly has an 'any' type.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationPage.tsx(3,27): error TS2307: Cannot find module '../components/layout/DesktopLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationPage.tsx(4,26): error TS2307: Cannot find module '../components/layout/MobileLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultationPage.tsx(5,31): error TS2307: Cannot find module '../shared/hooks/useResponsive' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultPage.tsx(2,27): error TS2307: Cannot find module '../components/layout/DesktopLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultPage.tsx(3,26): error TS2307: Cannot find module '../components/layout/MobileLayout' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ConsultPage.tsx(4,31): error TS2307: Cannot find module '../shared/hooks/useResponsive' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/HomePage.tsx(4,25): error TS2307: Cannot find module '../contexts/AuthContext' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/LoginPage.tsx(3,25): error TS2307: Cannot find module '../contexts/AuthContext' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/MedicalCasePage.tsx(4,38): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/MessagesPage.tsx(2,32): error TS2307: Cannot find module '../services/messageService' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/MessagesPage.tsx(3,46): error TS2307: Cannot find module '../types/message' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/MessagesPage.tsx(85,41): error TS7006: Parameter 'tag' implicitly has an 'any' type.
+src/pages_backup/desktop_pages_backup_20260101_173943/MessagesPage.tsx(114,45): error TS7006: Parameter 'comment' implicitly has an 'any' type.
+src/pages_backup/desktop_pages_backup_20260101_173943/ProfilePage.tsx(3,25): error TS2307: Cannot find module '../services/authService' or its corresponding type declarations.
+src/pages_backup/desktop_pages_backup_20260101_173943/ProfilePage.tsx(4,22): error TS2307: Cannot find module '../shared/types/user' or its corresponding type declarations.
+src/shared/types/content/base.ts(2,59): error TS2306: File 'C:/Users/dongz/medical-platform/src/shared/types/base.ts' is not a module.
+src/shared/types/message/announcement.ts(480,48): error TS2339: Property 'createdAt' does not exist on type 'AnnouncementMessage'.
+src/shared/types/message/article.ts(368,98): error TS2345: Argument of type '("general_public" | "patients" | "family_members" | "doctors" | "nurses" | "pharmacists" | "medical_students")[]' is not assignable to parameter of type 'string'.
+src/shared/types/message/article.ts(376,61): error TS2339: Property 'createdAt' does not exist on type 'ArticleMessage'.
+src/shared/types/message/article.ts(467,44): error TS2345: Argument of type 'string' is not assignable to parameter of type '("general_public" | "patients" | "family_members" | "doctors" | "nurses" | "pharmacists" | "medical_students")[]'.
+src/shared/types/message/base.ts(32,18): error TS2430: Interface 'MessageBase' incorrectly extends interface 'PublicContent'.
+  Types of property 'status' are incompatible.
+    Type 'MessageStatus' is not assignable to type '"active" | "deleted" | "archived"'.
+src/shared/types/message/base.ts(210,70): error TS2677: A type predicate's type must be assignable to its parameter's type.
+  Type 'MessageBase' is not assignable to type 'PublicContent'.
+    Types of property 'status' are incompatible.
+      Type 'MessageStatus' is not assignable to type '"active" | "deleted" | "archived"'.
+src/shared/types/message/base.ts(277,5): error TS1117: An object literal cannot have multiple properties with the same name.
+src/shared/types/message/lesson.ts(634,61): error TS6133: 'index' is declared but its value is never read.
+src/shared/types/message/lesson.ts(643,74): error TS6133: 'index' is declared but its value is never read.
+src/shared/types/message/lesson.ts(648,11): error TS2322: Type 'undefined' is not assignable to type 'string'.
+src/shared/types/message/lesson.ts(700,82): error TS2345: Argument of type 'string' is not assignable to parameter of type 'InvolvedRole'.
+src/shared/types/message/lesson.ts(708,28): error TS2345: Argument of type 'string' is not assignable to parameter of type 'number'.
+  Type 'string' is not assignable to type 'number'.
+src/shared/types/personal/base.ts(2,59): error TS2306: File 'C:/Users/dongz/medical-platform/src/shared/types/base.ts' is not a module.
+src/types/message.ts(209,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageItem'.
+src/types/message.ts(210,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageComment'.
+src/types/message.ts(211,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageCategory'.
+src/types/message.ts(212,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageService'.
+src/types/message.ts(213,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageQueryOptions'.
+src/types/message.ts(214,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageCreateData'.
+src/types/message.ts(215,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageUpdateData'.
+src/types/message.ts(216,3): error TS2484: Export declaration conflicts with exported declaration of 'MessageStats'.

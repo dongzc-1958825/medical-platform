@@ -1,0 +1,603 @@
+﻿/**
+ * 缁熶竴鍖荤枟鏁版嵁浠撳簱鎺ュ彛
+ * 涓轰簲澶у姛鑳芥彁渚涚粺涓€鐨勬暟鎹搷浣滄帴鍙?
+ * 璁捐鍘熷垯锛氱粺涓€鏁版嵁绠＄悊銆侀暱鏈熷瓨鍌ㄣ€佸井淇′簰閫氬弸濂?
+ */
+
+import {
+  MedicalPost,
+  MessagePost,
+  MedicalCasePost,
+  ConsultationPost,
+  CommunityPost,
+  MessageCategory,
+  DataStatus,
+  StorageTier,
+  AuthorRole,
+  QueryOptions,
+  MedicalDataStats,
+  ValueMetrics,
+  WeChatImportOptions,
+  CreatePostData,
+  UpdatePostData
+} from '../shared/types/message';
+
+// ==================== 鍩虹鎺ュ彛 ====================
+
+/**
+ * 鏁版嵁鎿嶄綔缁撴灉
+ */
+export interface DataOperationResult<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+/**
+ * 鎵归噺鎿嶄綔缁撴灉
+ */
+export interface BatchOperationResult {
+  success: boolean;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  errors: Array<{ id: string; error: string }>;
+}
+
+/**
+ * 鎼滅储鏉′欢
+ */
+export interface SearchConditions {
+  keywords?: string;
+  category?: MessageCategory;
+  authorId?: string;
+  tags?: string[];
+  dateRange?: { start?: string; end?: string };
+  minValueScore?: number;
+  entityType?: string | string[];
+}
+
+/**
+ * 鏁版嵁杩佺Щ鎶ュ憡
+ */
+export interface DataMigrationReport {
+  timestamp: string;
+  sourceTier: StorageTier;
+  targetTier: StorageTier;
+  migratedCount: number;
+  skippedCount: number;
+  failedCount: number;
+  totalSizeBefore: number;
+  totalSizeAfter: number;
+  estimatedSpaceSaved: number;
+}
+
+/**
+ * 鏁版嵁娓呯悊鎶ュ憡
+ */
+export interface DataCleanupReport {
+  timestamp: string;
+  removedInvalidCount: number;
+  archivedInactiveCount: number;
+  compressedCount: number;
+  totalSpaceFreed: number;
+  details: {
+    removedPosts: string[];
+    archivedPosts: string[];
+    compressedPosts: string[];
+  };
+}
+
+// ==================== 涓讳粨搴撴帴鍙?====================
+
+/**
+ * 缁熶竴鍖荤枟鏁版嵁浠撳簱鎺ュ彛
+ * 娉ㄦ剰锛氭鎺ュ彛涓轰簲澶у姛鑳芥彁渚涚粺涓€鏁版嵁鎿嶄綔锛屼笉渚濊禆鍏蜂綋瀛樺偍瀹炵幇
+ */
+export interface IMedicalDataRepository {
+  // ============ 鍒濆鍖栦笌淇℃伅 ============
+  
+  /**
+   * 鍒濆鍖栦粨搴?
+   */
+  initialize(): Promise<void>;
+  
+  /**
+   * 鑾峰彇浠撳簱淇℃伅
+   */
+  getInfo(): Promise<{
+    storageType: string;
+    totalCapacity: number;
+    usedCapacity: number;
+    postCount: number;
+    lastBackupTime?: string;
+    isReady: boolean;
+  }>;
+  
+  // ============ 鍩虹CRUD鎿嶄綔 ============
+  
+  /**
+   * 鍒涘缓鏂板笘瀛?
+   */
+  createPost(data: CreatePostData): Promise<DataOperationResult<MedicalPost>>;
+  
+  /**
+   * 鑾峰彇鍗曚釜甯栧瓙
+   */
+  getPost(id: string): Promise<DataOperationResult<MedicalPost>>;
+  
+  /**
+   * 鏇存柊甯栧瓙
+   */
+  updatePost(id: string, updates: UpdatePostData, reason?: string): Promise<DataOperationResult<MedicalPost>>;
+  
+  /**
+   * 鍒犻櫎甯栧瓙锛堣蒋鍒犻櫎锛?
+   */
+  deletePost(id: string, reason?: string, hardDelete?: boolean): Promise<DataOperationResult>;
+  
+  /**
+   * 鎾ゅ洖甯栧瓙
+   */
+  withdrawPost(id: string, reason: string): Promise<DataOperationResult>;
+  
+  /**
+   * 鎭㈠宸插垹闄?鎾ゅ洖鐨勫笘瀛?
+   */
+  restorePost(id: string): Promise<DataOperationResult<MedicalPost>>;
+  
+  // ============ 鎵归噺鏌ヨ鎿嶄綔 ============
+  
+  /**
+   * 鏌ヨ甯栧瓙鍒楄〃
+   */
+  findPosts(options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  /**
+   * 鎸夊垎绫绘煡璇?
+   */
+  findPostsByCategory(category: MessageCategory, options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  /**
+   * 鎸変綔鑰呮煡璇?
+   */
+  findPostsByAuthor(authorId: string, options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  /**
+   * 鎸夊疄浣撶被鍨嬫煡璇?
+   */
+  findPostsByEntityType(entityType: string, options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  // ============ 鎼滅储鍔熻兘 ============
+  
+  /**
+   * 鍏抽敭璇嶆悳绱?
+   */
+  searchPosts(conditions: SearchConditions, options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  /**
+   * 鏍囩鎼滅储
+   */
+  searchPostsByTags(tags: string[], options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  /**
+   * 鍏ㄦ枃鎼滅储锛堝鏋滄敮鎸侊級
+   */
+  fullTextSearch(query: string, options?: QueryOptions): Promise<DataOperationResult<MedicalPost[]>>;
+  
+  // ============ 缁熻鍜屽垎鏋?============
+  
+  /**
+   * 鑾峰彇鏁版嵁缁熻
+   */
+  getStatistics(): Promise<DataOperationResult<MedicalDataStats>>;
+  
+  /**
+   * 鑾峰彇鍒嗙被缁熻
+   */
+  getCategoryStatistics(category?: MessageCategory): Promise<DataOperationResult<Omit<MedicalDataStats, 'byCategory'>>>;
+  
+  /**
+   * 鑾峰彇浣滆€呯粺璁?
+   */
+  getAuthorStatistics(authorId?: string): Promise<DataOperationResult<{
+    postCount: number;
+    totalViews: number;
+    totalLikes: number;
+    averageValueScore: number;
+  }>>;
+  
+  /**
+   * 璇勪及甯栧瓙浠峰€?
+   */
+  evaluatePostValue(id: string): Promise<DataOperationResult<ValueMetrics>>;
+  
+  // ============ 鎵归噺鎿嶄綔 ============
+  
+  /**
+   * 鎵归噺鏇存柊
+   */
+  batchUpdate(ids: string[], updates: UpdatePostData): Promise<BatchOperationResult>;
+  
+  /**
+   * 鎵归噺鍒犻櫎
+   */
+  batchDelete(ids: string[], reason?: string): Promise<BatchOperationResult>;
+  
+  /**
+   * 鎵归噺褰掓。
+   */
+  batchArchive(ids: string[]): Promise<BatchOperationResult>;
+  
+  // ============ 鏁版嵁绠＄悊 ============
+  
+  /**
+   * 褰掓。甯栧瓙锛堢Щ鍔ㄥ埌褰掓。瀛樺偍锛?
+   */
+  archivePost(id: string): Promise<DataOperationResult>;
+  
+  /**
+   * 杩佺Щ瀛樺偍灞傜骇
+   */
+  migrateStorageTier(id: string, targetTier: StorageTier): Promise<DataOperationResult>;
+  
+  /**
+   * 鑷姩杩佺Щ锛堟牴鎹瓥鐣ワ級
+   */
+  autoMigrateByPolicy(): Promise<DataOperationResult<DataMigrationReport>>;
+  
+  /**
+   * 娓呯悊鏃犳晥鏁版嵁
+   */
+  cleanupInvalidData(): Promise<DataOperationResult<DataCleanupReport>>;
+  
+  /**
+   * 鍘嬬缉鏁版嵁
+   */
+  compressData(): Promise<DataOperationResult<{ compressedCount: number; spaceSaved: number }>>;
+  
+  // ============ 瀵煎叆/瀵煎嚭 ============
+  
+  /**
+   * 瀵煎嚭鏁版嵁
+   */
+  exportData(options?: {
+    format?: 'json' | 'csv';
+    includeArchived?: boolean;
+    dateRange?: { start: string; end: string };
+    entityTypes?: string[];
+  }): Promise<DataOperationResult<string>>;
+  
+  /**
+   * 瀵煎叆鏁版嵁
+   */
+  importData(data: string, options?: {
+    clearExisting?: boolean;
+    mergeStrategy?: 'skip' | 'overwrite' | 'merge';
+  }): Promise<BatchOperationResult>;
+  
+  /**
+   * 澶囦唤鏁版嵁
+   */
+  backupData(): Promise<DataOperationResult<{ backupId: string; size: number; timestamp: string }>>;
+  
+  /**
+   * 鎭㈠澶囦唤
+   */
+  restoreBackup(backupId: string): Promise<DataOperationResult>;
+  
+  // ============ 寰俊浜掗€氬姛鑳?============
+  
+  /**
+   * 浠庡井淇″唴瀹瑰垱寤哄笘瀛?
+   */
+  createFromWeChat(
+    wechatContent: string,
+    authorInfo: { id: string; name: string; role: AuthorRole },
+    options?: WeChatImportOptions & { category?: MessageCategory }
+  ): Promise<DataOperationResult<MedicalPost>>;
+  
+  /**
+   * 鐢熸垚寰俊鍒嗕韩鍐呭
+   */
+  generateWeChatShareContent(id: string, template?: {
+    titleTemplate?: string;
+    footerTemplate?: string;
+    maxLength?: number;
+  }): Promise<DataOperationResult<string>>;
+  
+  /**
+   * 璁板綍寰俊鍒嗕韩
+   */
+  recordWeChatShare(id: string): Promise<DataOperationResult>;
+  
+  /**
+   * 鑾峰彇寰俊鍒嗕韩缁熻
+   */
+  getWeChatShareStats(): Promise<DataOperationResult<{
+    totalShares: number;
+    sharesByCategory: Record<MessageCategory, number>;
+    sharesByMonth: Record<string, number>;
+    mostSharedPosts: Array<{ postId: string; title: string; shareCount: number }>;
+  }>>;
+  
+  // ============ 璁㈤槄鍜屼簨浠?============
+  
+  /**
+   * 璁㈤槄鏁版嵁鍙樺寲
+   */
+  subscribeToChanges(callback: (event: {
+    type: 'created' | 'updated' | 'deleted' | 'archived';
+    post: MedicalPost;
+    timestamp: string;
+  }) => void): () => void;
+  
+  /**
+   * 璁㈤槄缁熻鏇存柊
+   */
+  subscribeToStatistics(callback: (stats: MedicalDataStats) => void): () => void;
+  
+  /**
+   * 瑙﹀彂鏁版嵁鍒锋柊
+   */
+  refreshData(): Promise<void>;
+}
+
+// ==================== 宸ュ巶鎺ュ彛 ====================
+
+/**
+ * 浠撳簱宸ュ巶鎺ュ彛 - 鐢ㄤ簬鍒涘缓涓嶅悓瀹炵幇鐨勪粨搴?
+ */
+export interface IMedicalDataRepositoryFactory {
+  /**
+   * 鍒涘缓浠撳簱瀹炰緥
+   * @param storageType 瀛樺偍绫诲瀷
+   * @param options 閰嶇疆閫夐」
+   */
+  createRepository(
+    storageType?: 'local' | 'indexeddb' | 'memory' | 'api',
+    options?: {
+      databaseName?: string;
+      apiBaseUrl?: string;
+      encryptionKey?: string;
+      autoBackup?: boolean;
+      backupInterval?: number;
+    }
+  ): Promise<IMedicalDataRepository>;
+  
+  /**
+   * 鑾峰彇鏀寔鐨勫瓨鍌ㄧ被鍨?
+   */
+  getSupportedStorageTypes(): Array<{
+    type: string;
+    displayName: string;
+    description: string;
+    maxCapacity: number;
+    features: string[];
+  }>;
+  
+  /**
+   * 杩佺Щ鏁版嵁
+   */
+  migrateData(
+    fromType: string,
+    toType: string,
+    options?: {
+      preserveData: boolean;
+      backupBeforeMigrate: boolean;
+      progressCallback?: (progress: number, message: string) => void;
+    }
+  ): Promise<{
+    success: boolean;
+    migratedCount: number;
+    totalTime: number;
+    errors: string[];
+  }>;
+  
+  /**
+   * 鑾峰彇褰撳墠瀛樺偍閰嶇疆
+   */
+  getCurrentConfig(): {
+    storageType: string;
+    databaseName?: string;
+    apiBaseUrl?: string;
+    autoBackup: boolean;
+    lastBackupTime?: string;
+  };
+}
+
+// ==================== 鍏蜂綋浠撳簱瀹炵幇鍗犱綅绗?====================
+
+/**
+ * LocalStorage瀹炵幇閰嶇疆
+ */
+export interface LocalStorageConfig {
+  storageKeyPrefix: string;
+  maxSize: number; // 鏈€澶у瓨鍌ㄥぇ灏忥紙瀛楄妭锛?
+  autoCleanup: boolean;
+  cleanupThreshold: number; // 娓呯悊闃堝€硷紙鐧惧垎姣旓級
+  compression: boolean;
+}
+
+/**
+ * IndexedDB瀹炵幇閰嶇疆
+ */
+export interface IndexedDBConfig {
+  databaseName: string;
+  databaseVersion: number;
+  objectStoreName: string;
+  keyPath: string;
+  indexes: Array<{
+    name: string;
+    keyPath: string | string[];
+    options?: IDBIndexParameters;
+  }>;
+  autoIncrement: boolean;
+}
+
+/**
+ * API瀹炵幇閰嶇疆
+ */
+export interface ApiRepositoryConfig {
+  baseUrl: string;
+  endpoints: {
+    posts: string;
+    search: string;
+    statistics: string;
+    import: string;
+    export: string;
+    backup: string;
+  };
+  authentication: {
+    type: 'bearer' | 'basic' | 'cookie';
+    token?: string;
+  };
+  timeout: number;
+  retryCount: number;
+}
+
+// ==================== 宸ュ叿鍑芥暟 ====================
+
+/**
+ * 鍒涘缓榛樿鐨凩ocalStorage閰嶇疆
+ */
+export function createDefaultLocalStorageConfig(): LocalStorageConfig {
+  return {
+    storageKeyPrefix: 'medical-data-',
+    maxSize: 10 * 1024 * 1024, // 10MB
+    autoCleanup: true,
+    cleanupThreshold: 80, // 80%浣跨敤鐜囨椂瑙﹀彂娓呯悊
+    compression: true
+  };
+}
+
+/**
+ * 鍒涘缓榛樿鐨処ndexedDB閰嶇疆
+ */
+export function createDefaultIndexedDBConfig(): IndexedDBConfig {
+  return {
+    databaseName: 'medical-data-db',
+    databaseVersion: 1,
+    objectStoreName: 'posts',
+    keyPath: 'id',
+    indexes: [
+      { name: 'byEntityType', keyPath: 'entityType' },
+      { name: 'byCategory', keyPath: 'category' },
+      { name: 'byAuthor', keyPath: 'authorId' },
+      { name: 'byCreatedAt', keyPath: 'createdAt' },
+      { name: 'byStatus', keyPath: 'status' },
+      { name: 'byStorageTier', keyPath: 'storageTier' }
+    ],
+    autoIncrement: false
+  };
+}
+
+/**
+ * 楠岃瘉甯栧瓙鏁版嵁
+ */
+export function validatePostData(data: CreatePostData): {
+  isValid: boolean;
+  errors: string[];
+} {
+  const errors: string[] = [];
+  
+  // 蹇呭～瀛楁妫€鏌?
+  if (!data.title || data.title.trim().length === 0) {
+    errors.push('鏍囬涓嶈兘涓虹┖');
+  }
+  
+  if (!data.content || data.content.trim().length === 0) {
+    errors.push('鍐呭涓嶈兘涓虹┖');
+  }
+  
+  if (data.content.trim().length < 10) {
+    errors.push('鍐呭鑷冲皯闇€瑕?0涓瓧绗?);
+  }
+  
+  if (!data.authorId || !data.authorName || !data.authorRole) {
+    errors.push('浣滆€呬俊鎭笉瀹屾暣');
+  }
+  
+  if (!data.entityType) {
+    errors.push('瀹炰綋绫诲瀷涓嶈兘涓虹┖');
+  }
+  
+  // 娑堟伅绫诲瀷蹇呴』鏈夊叧鑱斿垎绫?
+  if (data.entityType === 'message' && !data.category) {
+    errors.push('娑堟伅绫诲瀷蹇呴』鎸囧畾鍒嗙被');
+  }
+  
+  // 鏍囩鏁伴噺闄愬埗
+  if (data.tags && data.tags.length > 10) {
+    errors.push('鏍囩鏁伴噺涓嶈兘瓒呰繃10涓?);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
+ * 鐢熸垚甯栧瓙ID
+ */
+export function generatePostId(): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substr(2, 9);
+  return `post_${timestamp}_${random}`;
+}
+
+/**
+ * 璁＄畻甯栧瓙棰勪及浠峰€煎垎鏁?
+ */
+export function calculateEstimatedValueScore(post: CreatePostData): number {
+  let score = 50; // 鍩虹鍒嗘暟
+  
+  // 浣滆€呰祫璐ㄥ姞鍒?
+  if (post.authorCredentials) score += 10;
+  if (post.institution) score += 5;
+  
+  // 鍐呭璐ㄩ噺璇勪及
+  const contentLength = post.content.length;
+  if (contentLength > 500) score += 10;
+  if (contentLength > 1000) score += 5;
+  
+  // 鍒嗙被閲嶈鎬?
+  if (post.category === 'lesson-learned') score += 15; // 鍓嶈溅涔嬮壌鏈€閲嶈
+  if (post.category === 'new-drug') score += 10; // 鏂拌嵂淇℃伅閲嶈
+  
+  // 鍖荤枟棰嗗煙涓撲笟鎬?
+  if (post.medicalField) score += 5;
+  if (post.evidenceLevel === 'A' || post.evidenceLevel === 'B') score += 10;
+  
+  return Math.min(score, 100);
+}
+
+// ==================== 瀵煎嚭鎵€鏈夌被鍨?====================
+
+export type {
+  MedicalPost,
+  MessagePost,
+  MedicalCasePost,
+  ConsultationPost,
+  CommunityPost,
+  MessageCategory,
+  DataStatus,
+  StorageTier,
+  AuthorRole,
+  QueryOptions,
+  MedicalDataStats,
+  ValueMetrics,
+  WeChatImportOptions,
+  CreatePostData,
+  UpdatePostData
+};
+
+export {
+  validatePostData,
+  generatePostId,
+  calculateEstimatedValueScore,
+  createDefaultLocalStorageConfig,
+  createDefaultIndexedDBConfig
+};

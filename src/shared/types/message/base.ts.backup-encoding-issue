@@ -1,0 +1,285 @@
+﻿// src/shared/types/message/base.ts
+import { PublicContent } from '../content/base';
+import { DataVisibility } from '../base';
+
+/**
+ * 娑堟伅鍒嗙被 - 浜斿ぇ涓撲笟鍒嗙被锛堜笓鐢ㄤ簬娑堟伅鍔熻兘锛?
+ * 杩欐槸娑堟伅鍔熻兘鍐呴儴鐨勫瓙绫诲瀷鍒嗙被锛屼笌鍏朵粬鍥涘ぇ鍔熻兘鏄钩琛屽叧绯?
+ */
+export enum MessageCategory {
+  NEW_DRUG = 'new_drug',           // 鏂拌嵂淇℃伅锛氳嵂鍝佺爺鍙戙€佷复搴婅瘯楠屻€佺敤鑽粡楠?
+  PROFESSIONAL_ARTICLE = 'professional_article', // 涓撲笟鏂囩珷锛氬尰瀛﹁鏂囥€佺爺绌舵垚鏋溿€佸鏈鐐?
+  ANNOUNCEMENT = 'announcement',   // 鍏憡鍙戝竷锛氬钩鍙伴€氱煡銆佷細璁俊鎭€佹斂绛栬В璇?
+  SPECIAL_EFFECT = 'special_effect', // 鐗规晥鍒嗕韩锛氱壒鏁堟柟妗堛€佹垚鍔熸渚嬨€佺嫭鐗圭枟娉?
+  LESSON_LEARNED = 'lesson_learned' // 鍓嶈溅涔嬮壌锛氱粡楠屾暀璁€佽瘖鐤楄鍖恒€侀闄╄绀?
+}
+
+/**
+ * 娑堟伅鐘舵€?- 涓撶敤浜庢秷鎭殑鐢熷懡鍛ㄦ湡绠＄悊
+ */
+export enum MessageStatus {
+  DRAFT = 'draft',          // 鑽夌
+  PUBLISHED = 'published',  // 宸插彂甯?
+  REVIEWING = 'reviewing',  // 瀹℃牳涓?
+  CORRECTED = 'corrected',  // 宸蹭慨姝?
+  WITHDRAWN = 'withdrawn',  // 宸叉挙鍥?
+  ARCHIVED = 'archived'     // 宸插綊妗?
+}
+
+/**
+ * 娑堟伅鍩虹被 - 缁ф壙鑷?PublicContent锛屾坊鍔犳秷鎭壒瀹氬瓧娈?
+ * 鐢ㄤ簬娑堟伅鍔熻兘鐨勪簲涓瓙绫诲瀷锛堟柊鑽俊鎭€佷笓涓氭枃绔犵瓑锛?
+ */
+export interface MessageBase extends PublicContent {
+  // === 娑堟伅鐗瑰畾瀛楁 ===
+  
+  // 娑堟伅鍒嗙被锛堝繀椤伙級
+  category: MessageCategory;
+  
+  // 瀛愬垎绫伙紙鍙€夛級
+  subCategory?: string;
+  
+  // 娑堟伅鐘舵€?
+  status: MessageStatus;
+  version: number; // 鐗堟湰鍙凤紙鐢ㄤ簬杩借釜淇敼锛?
+  
+  // === 寰俊浜掗€氬寮哄瓧娈?===
+  
+  // 鍘熷寰俊鍐呭锛堝鏋滀粠寰俊瀵煎叆锛?
+  originalWeChatContent?: string;
+  
+  // 浼樺寲鍚庣殑寰俊鍒嗕韩鍐呭
+  wechatOptimizedContent?: string;
+  
+  // 寰俊鍒嗕韩缁熻鏁版嵁
+  wechatShareCount: number;
+  
+  // 寰俊闃呰棰勪及鏃堕暱锛堝垎閽燂級
+  estimatedReadTime?: number;
+  
+  // === 娑堟伅鐗瑰畾鍏冩暟鎹?===
+  
+  // 娑堟伅鏉ユ簮璇︾粏鍒嗙被
+  sourceDetails?: {
+    type: 'original' | 'repost' | 'translation' | 'summary';
+    originalUrl?: string;
+    originalAuthor?: string;
+    translationInfo?: {
+      sourceLanguage: string;
+      targetLanguage: string;
+      translator?: string;
+    };
+  };
+  
+  // 寮曠敤淇℃伅
+  references?: Array<{
+    id: string;
+    title: string;
+    author: string;
+    url?: string;
+    type: 'article' | 'book' | 'website' | 'other';
+  }>;
+  
+  // 闄勪欢鍒楄〃
+  attachments?: Array<{
+    id: string;
+    name: string;
+    type: 'image' | 'pdf' | 'doc' | 'video' | 'audio';
+    url: string;
+    size?: number;
+    description?: string;
+  }>;
+  
+  // === 鍖荤枟涓撲笟瀛楁 ===
+  
+  // 鍖诲棰嗗煙
+  medicalField?: string;
+  
+  // 璇佹嵁绛夌骇
+  evidenceLevel?: 'A' | 'B' | 'C' | 'D'; // A:鏈€楂?
+  
+  // 閫傜敤浜虹兢
+  targetAudience?: string[];
+  
+  // 閲嶈鎻愮ず/璀﹀憡
+  importantNotes?: string[];
+  
+  // === 浜掑姩澧炲己 ===
+  
+  // 鏀惰棌缁熻
+  saveCount: number;
+  
+  // 涓炬姤娆℃暟
+  reportCount: number;
+  
+  // 璐ㄩ噺璇勫垎锛堢敤鎴疯瘎浠凤級
+  qualityScore?: number; // 0-5鍒?
+  
+  // === 鏃舵晥鎬х鐞?===
+  
+  // 鏈夋晥鏈燂紙瀵逛簬鏈夋椂鏁堟€х殑娑堟伅锛?
+  expirationDate?: string;
+  
+  // 绱ф€ョ▼搴?
+  urgency?: 'high' | 'medium' | 'low' | 'none';
+  
+  // 鏄惁闇€瑕佸畾鏈熸洿鏂?
+  requiresPeriodicReview?: boolean;
+  lastReviewedAt?: string;
+  nextReviewDue?: string;
+}
+
+/**
+ * 娑堟伅鏌ヨ閫夐」 - 涓撶敤浜庢秷鎭姛鑳界殑鏌ヨ
+ */
+export interface MessageQueryOptions {
+  // 鍩虹绛涢€?
+  category?: MessageCategory | MessageCategory[];
+  status?: MessageStatus | MessageStatus[];
+  authorId?: string;
+  
+  // 鏃堕棿鑼冨洿
+  startDate?: string;
+  endDate?: string;
+  timeFrame?: 'today' | 'this_week' | 'this_month' | 'this_year';
+  
+  // 鍐呭绛涢€?
+  tags?: string[];
+  keywords?: string[];
+  medicalField?: string;
+  
+  // 璐ㄩ噺绛涢€?
+  minQualityScore?: number;
+  isVerified?: boolean;
+  isFeatured?: boolean;
+  
+  // 鏃舵晥鎬х瓫閫?
+  includeExpired?: boolean;
+  urgency?: string;
+  
+  // 鎺掑簭閫夐」
+  sortBy?: 'createdAt' | 'publishedAt' | 'viewCount' | 'likeCount' | 'commentCount' | 'shareCount' | 'saveCount';
+  sortOrder?: 'asc' | 'desc';
+  
+  // 鍒嗛〉
+  page?: number;
+  pageSize?: number;
+  
+  // 寰俊鐩稿叧
+  includeWechatContent?: boolean;
+}
+
+/**
+ * 娑堟伅缁熻鏁版嵁
+ */
+export interface MessageStats {
+  totalMessages: number;
+  byCategory: Record<MessageCategory, number>;
+  byStatus: Record<MessageStatus, number>;
+  byMedicalField: Record<string, number>;
+  
+  // 鏃堕棿鍒嗗竷
+  dailyAverage: number;
+  weeklyTrend: number; // 鍛ㄥ闀跨巼
+  
+  // 浜掑姩缁熻
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  totalSaves: number;
+  
+  // 璐ㄩ噺缁熻
+  verifiedCount: number;
+  featuredCount: number;
+  averageQualityScore: number;
+  
+  // 浣滆€呯粺璁?
+  activeAuthors: number;
+  topAuthors: Array<{
+    authorId: string;
+    authorName: string;
+    messageCount: number;
+    totalViews: number;
+  }>;
+}
+
+/**
+ * 绫诲瀷瀹堝崼 - 妫€鏌ユ槸鍚︿负娑堟伅鍐呭
+ * 娉ㄦ剰锛氳繖鍙槸绀轰緥锛屽叿浣撳疄鐜伴渶瑕佸鍏ュ疄闄呯被鍨?
+ */
+export function isMessageContent(content: PublicContent): content is MessageBase {
+  // 杩欓噷闇€瑕佹牴鎹疄闄呮儏鍐靛疄鐜?
+  // 渚嬪妫€鏌ユ槸鍚︽湁 category 瀛楁
+  return 'category' in content;
+}
+
+/**
+ * 鑾峰彇鍒嗙被鏄剧ず鍚嶇О
+ */
+export function getCategoryDisplayName(category: MessageCategory): string {
+  const names: Record<MessageCategory, string> = {
+    [MessageCategory.NEW_DRUG]: '鏂拌嵂淇℃伅',
+    [MessageCategory.PROFESSIONAL_ARTICLE]: '涓撲笟鏂囩珷',
+    [MessageCategory.ANNOUNCEMENT]: '鍏憡鍙戝竷',
+    [MessageCategory.SPECIAL_EFFECT]: '鐗规晥鍒嗕韩',
+    [MessageCategory.LESSON_LEARNED]: '鍓嶈溅涔嬮壌'
+  };
+  return names[category];
+}
+
+/**
+ * 鑾峰彇鐘舵€佹樉绀哄悕绉?
+ */
+export function getStatusDisplayName(status: MessageStatus): string {
+  const names: Record<MessageStatus, string> = {
+    [MessageStatus.DRAFT]: '鑽夌',
+    [MessageStatus.PUBLISHED]: '宸插彂甯?,
+    [MessageStatus.REVIEWING]: '瀹℃牳涓?,
+    [MessageStatus.CORRECTED]: '宸蹭慨姝?,
+    [MessageStatus.WITHDRAWN]: '宸叉挙鍥?,
+    [MessageStatus.ARCHIVED]: '宸插綊妗?
+  };
+  return names[status];
+}
+
+/**
+ * 鍒涘缓鏂版秷鎭殑榛樿鏁版嵁
+ */
+export function createDefaultMessage(
+  authorInfo: {
+    id: string;
+    name: string;
+    role: string;
+  },
+  category: MessageCategory
+): Omit<MessageBase, 'id' | 'createdAt'> {
+  return {
+    // 从 PublicContent 继承的字段
+    title: '',
+    content: '',
+    summary: '',
+    authorId: authorInfo.id,
+    authorName: authorInfo.name,
+    authorRole: authorInfo.role,
+    tags: [],
+    keywords: [],
+    viewCount: 0,
+    likeCount: 0,
+    commentCount: 0,
+    shareCount: 0,
+    status: 'active',
+    isVerified: false,
+    isFeatured: false,
+    visibility: DataVisibility.PUBLIC,
+    
+    // 消息特定字段
+    category,
+    status: MessageStatus.DRAFT, // 注意：这里的status是MessageStatus，不是字符串
+    version: 1,
+    wechatShareCount: 0,
+    saveCount: 0,
+    reportCount: 0,
+  };
+}
+}

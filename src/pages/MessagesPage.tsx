@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+﻿import * as React from 'react';
+import { useState, useEffect } from 'react';
 import { messageService } from '../services/messageService';
 import { MessageItem, MessageCategory } from '../types/message';
 
@@ -67,9 +68,9 @@ const MessagesPage: React.FC = () => {
           <h1 className="text-xl font-bold text-gray-800">{selectedMessage.title}</h1>
           <div className="flex items-center text-sm text-gray-500 mt-2">
             <span>{selectedMessage.author}</span>
-            <span className="mx-2">•</span>
+            <span className="mx-2">·</span>
             <span>{formatTime(selectedMessage.publishTime)}</span>
-            <span className="mx-2">•</span>
+            <span className="mx-2">·</span>
             <span>浏览 {selectedMessage.viewCount}</span>
           </div>
         </div>
@@ -215,3 +216,5 @@ const MessagesPage: React.FC = () => {
 };
 
 export default MessagesPage;
+
+

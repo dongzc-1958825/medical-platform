@@ -1,4 +1,4 @@
-﻿// src/App.tsx - 切换为 HashRouter 版本
+﻿import React from 'react'; // 修复：添加React导入
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'; // 关键修改
 import { isMobileDevice } from './shared/utils/device';
 import { AuthProvider } from './contexts/AuthContext';

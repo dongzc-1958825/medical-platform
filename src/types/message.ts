@@ -1,3 +1,6 @@
+﻿// src/types/message.ts
+// 独立的消息类型定义 - 不依赖共享类型
+
 export interface MessageComment {
   id: string;
   author: string;

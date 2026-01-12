@@ -1,0 +1,498 @@
+/**
+ * 医疗数据模型定义 - 为五大功能提供统一数据基础
+ * 设计原则：长期存储、医疗行业特点、微信互通友好
+ * 位置：src/shared/types/ - 符合统一数据统一业务逻辑原则
+ */
+
+// ==================== 核心类型定义 ====================
+
+/**
+ * 消息分类 - 五大专业分类（用于消息功能）
+ */
+export type MessageCategory = 
+  | 'new-drug'           // 新药信息：药品研发、临床试验、用药经验
+  | 'professional-article' // 专业文章：医学论文、研究成果、学术观点
+  | 'announcement'       // 公告发布：平台通知、会议信息、政策解读
+  | 'special-effect'     // 特效分享：特效方案、成功案例、独特疗法
+  | 'lesson-learned';    // 前车之鉴：经验教训、诊疗误区、风险警示
+
+/**
+ * 数据状态 - 反映数据生命周期
+ */
+export type DataStatus = 
+  | 'active'       // 活跃：正常可访问
+  | 'withdrawn'    // 已撤回：作者主动撤回
+  | 'corrected'    // 已修正：内容有更新
+  | 'archived'     // 已归档：不活跃但长期保存
+  | 'deprecated';  // 已弃用：信息过时但仍保留参考
+
+/**
+ * 作者角色 - 医疗行业特定角色
+ */
+export type AuthorRole = 
+  | 'doctor'           // 医生
+  | 'patient'          // 患者
+  | 'researcher'       // 研究人员
+  | 'pharmacist'       // 药师
+  | 'nurse'           // 护士
+  | 'administrator'   // 管理人员
+  | 'medical-student' // 医学生
+  | 'other';          // 其他
+
+/**
+ * 存储层级 - 基于访问频率和价值的分级存储
+ */
+export type StorageTier = 
+  | 'hot'      // 热数据：频繁访问，高性能存储
+  | 'warm'     // 温数据：偶尔访问，标准存储
+  | 'cold'     // 冷数据：很少访问，低成本存储
+  | 'archive'; // 归档数据：几乎不访问，长期保存
+
+// ==================== 统一数据模型 ====================
+
+/**
+ * 医疗数据帖子 - 统一数据模型（为五大功能设计）
+ * 核心原则：长期存储、可追溯、微信互通友好
+ */
+export interface MedicalPost {
+  // === 唯一标识 ===
+  id: string;                    // 全局唯一ID
+  entityType: string;           // 实体类型：'message' | 'case' | 'consultation' | 'community' | 'profile'
+  
+  // === 内容信息 ===
+  title: string;                // 标题
+  content: string;              // 内容
+  summary?: string;             // 摘要（自动生成或手动填写）
+  
+  // === 分类和标签 ===
+  category?: MessageCategory;   // 消息分类（如为消息类型）
+  subCategory?: string;         // 子分类
+  tags: string[];               // 标签
+  keywords: string[];           // 关键词
+  
+  // === 作者信息（文责自负） ===
+  authorId: string;             // 作者用户ID
+  authorName: string;           // 作者显示名称
+  authorRole: AuthorRole;       // 作者角色
+  authorCredentials?: string;   // 作者资质/职称
+  institution?: string;         // 所属机构
+  
+  // === 时间信息（完整可追溯） ===
+  createdAt: string;            // 创建时间 ISO 8601
+  updatedAt?: string;           // 最后更新时间
+  publishedAt?: string;         // 发布时间
+  lastAccessedAt?: string;      // 最后访问时间（用于存储优化）
+  
+  // === 数据状态 ===
+  status: DataStatus;           // 数据状态
+  version: number;              // 版本号（用于追踪修改）
+  
+  // === 互动数据 ===
+  viewCount: number;            // 查看次数
+  likeCount: number;            // 点赞数
+  commentCount: number;         // 评论数
+  shareCount: number;           // 分享到微信次数
+  saveCount: number;            // 收藏次数
+  
+  // === 质量指标 ===
+  isFeatured: boolean;          // 是否精选（平台推荐）
+  isVerified: boolean;          // 是否平台认证
+  verificationNotes?: string;   // 认证备注
+  
+  // === 微信互通相关 ===
+  sourceType?: 'original' | 'wechat' | 'import'; // 来源类型
+  originalWeChatContent?: string;  // 原始微信内容（如有）
+  wechatOptimizedContent?: string; // 优化后的微信分享内容
+  
+  // === 医疗特定字段 ===
+  medicalField?: string;        // 医学领域（如：心血管、肿瘤）
+  evidenceLevel?: 'A' | 'B' | 'C' | 'D'; // 证据等级 A:最高
+  patientInfo?: string;         // 患者信息（匿名化后）
+  treatmentOutcome?: string;    // 治疗结果
+  
+  // === 存储管理 ===
+  storageTier: StorageTier;     // 当前存储层级
+  estimatedValueScore: number;  // 预估价值分数（0-100）
+  
+  // === 关联关系 ===
+  relatedPostIds: string[];     // 相关帖子ID
+  parentPostId?: string;        // 父帖子ID（如为回复）
+  
+  // === 元数据 ===
+  metadata: Record<string, any>; // 扩展元数据
+}
+
+/**
+ * 消息帖子 - 专用于消息功能
+ */
+export interface MessagePost extends MedicalPost {
+  entityType: 'message';
+  category: MessageCategory;  // 消息必须有关联分类
+  urgency?: 'high' | 'medium' | 'low'; // 紧急程度
+  expirationDate?: string;    // 有效期（如公告）
+}
+
+/**
+ * 医案帖子 - 专用于医案分享功能
+ */
+export interface MedicalCasePost extends MedicalPost {
+  entityType: 'case';
+  patientAge?: number;
+  patientGender?: 'male' | 'female' | 'other';
+  diagnosis?: string;
+  treatmentPlan?: string;
+  medications?: string[];
+  outcome?: 'cured' | 'improved' | 'stable' | 'worsened';
+  followUpPeriod?: string;
+}
+
+/**
+ * 咨询帖子 - 专用于寻医问药功能
+ */
+export interface ConsultationPost extends MedicalPost {
+  entityType: 'consultation';
+  questionType: 'diagnosis' | 'treatment' | 'medication' | 'other';
+  urgency: 'high' | 'medium' | 'low';
+  hasImages?: boolean;
+  doctorReplies?: string[]; // 医生回复ID列表
+}
+
+/**
+ * 社区帖子 - 专用于专病社区功能
+ */
+export interface CommunityPost extends MedicalPost {
+  entityType: 'community';
+  diseaseCategory: string;    // 疾病分类
+  discussionType: 'question' | 'experience' | 'support' | 'news';
+  isSticky?: boolean;         // 是否置顶
+}
+
+// ==================== 查询和配置类型 ====================
+
+/**
+ * 查询选项 - 统一查询接口
+ */
+export interface QueryOptions {
+  // 分页
+  limit?: number;
+  offset?: number;
+  
+  // 排序
+  sortBy?: 'createdAt' | 'updatedAt' | 'viewCount' | 'likeCount' | 'commentCount' | 'shareCount';
+  sortOrder?: 'asc' | 'desc';
+  
+  // 筛选
+  entityType?: string | string[];
+  category?: MessageCategory;
+  status?: DataStatus | DataStatus[];
+  authorId?: string;
+  storageTier?: StorageTier;
+  
+  // 时间范围
+  startDate?: string;
+  endDate?: string;
+  
+  // 其他
+  tags?: string[];
+  keywords?: string[];
+  minValueScore?: number;
+  includeArchived?: boolean;
+  includeWithdrawn?: boolean;
+}
+
+/**
+ * 数据统计信息
+ */
+export interface MedicalDataStats {
+  // 总量统计
+  totalPosts: number;
+  totalActive: number;
+  totalArchived: number;
+  
+  // 分类统计
+  byEntityType: Record<string, number>;
+  byCategory: Record<MessageCategory, number>;
+  
+  // 状态统计
+  byStatus: Record<DataStatus, number>;
+  
+  // 时间统计
+  todayNewPosts: number;
+  thisWeekNewPosts: number;
+  thisMonthNewPosts: number;
+  
+  // 互动统计
+  totalViews: number;
+  totalLikes: number;
+  totalComments: number;
+  totalShares: number;
+  
+  // 作者统计
+  uniqueAuthors: number;
+  
+  // 存储统计
+  byStorageTier: Record<StorageTier, number>;
+}
+
+/**
+ * 数据价值评估指标
+ */
+export interface ValueMetrics {
+  // 互动指标
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  shareCount: number;
+  saveCount: number;
+  
+  // 质量指标
+  isFeatured: boolean;
+  isVerified: boolean;
+  hasAuthorCredentials: boolean;
+  
+  // 计算综合价值分数（0-100）
+  calculateScore(): number {
+    const weights = {
+      views: 0.15,    // 15%
+      likes: 0.25,    // 25%
+      comments: 0.20, // 20%
+      shares: 0.15,   // 15%
+      saves: 0.10,    // 10%
+      featured: 0.08, // 8%
+      verified: 0.05, // 5%
+      credentials: 0.02 // 2%
+    };
+    
+    let score = 0;
+    
+    // 互动分数（归一化处理）
+    const maxViews = 1000;
+    const maxLikes = 500;
+    const maxComments = 200;
+    const maxShares = 300;
+    const maxSaves = 100;
+    
+    score += (Math.min(this.viewCount, maxViews) / maxViews) * 100 * weights.views;
+    score += (Math.min(this.likeCount, maxLikes) / maxLikes) * 100 * weights.likes;
+    score += (Math.min(this.commentCount, maxComments) / maxComments) * 100 * weights.comments;
+    score += (Math.min(this.shareCount, maxShares) / maxShares) * 100 * weights.shares;
+    score += (Math.min(this.saveCount, maxSaves) / maxSaves) * 100 * weights.saves;
+    
+    // 质量分数
+    if (this.isFeatured) score += 100 * weights.featured;
+    if (this.isVerified) score += 100 * weights.verified;
+    if (this.hasAuthorCredentials) score += 100 * weights.credentials;
+    
+    return Math.min(Math.round(score), 100);
+  }
+}
+
+// ==================== 微信互通类型 ====================
+
+/**
+ * 微信内容导入选项
+ */
+export interface WeChatImportOptions {
+  autoDetectCategory: boolean;
+  extractTags: boolean;
+  generateSummary: boolean;
+  preserveOriginal: boolean;
+  optimizeForSharing: boolean;
+}
+
+/**
+ * 微信分享模板
+ */
+export interface WeChatShareTemplate {
+  titleTemplate: string;
+  contentTemplate: string;
+  footerTemplate: string;
+  maxLength: number;
+  
+  generate(post: MedicalPost): string {
+    // 内容预览（截取前100字符）
+    const contentPreview = post.content.length > 100 
+      ? post.content.substring(0, 100) + '...' 
+      : post.content;
+    
+    // 构建分享内容
+    return `${this.titleTemplate.replace('{title}', post.title)}
+
+${contentPreview}
+
+${this.footerTemplate}
+—— 分享自医案平台
+作者：${post.authorName}${post.authorCredentials ? ` (${post.authorCredentials})` : ''}
+${post.institution ? `机构：${post.institution}` : ''}`;
+  }
+}
+
+// ==================== 工具函数和类型守卫 ====================
+
+/**
+ * 类型守卫：检查是否为消息帖子
+ */
+export function isMessagePost(post: MedicalPost): post is MessagePost {
+  return post.entityType === 'message';
+}
+
+/**
+ * 类型守卫：检查是否为医案帖子
+ */
+export function isMedicalCasePost(post: MedicalPost): post is MedicalCasePost {
+  return post.entityType === 'case';
+}
+
+/**
+ * 类型守卫：检查是否为咨询帖子
+ */
+export function isConsultationPost(post: MedicalPost): post is ConsultationPost {
+  return post.entityType === 'consultation';
+}
+
+/**
+ * 获取分类显示名称
+ */
+export function getCategoryDisplayName(category: MessageCategory): string {
+  const names: Record<MessageCategory, string> = {
+    'new-drug': '新药信息',
+    'professional-article': '专业文章',
+    'announcement': '公告发布',
+    'special-effect': '特效分享',
+    'lesson-learned': '前车之鉴'
+  };
+  return names[category] || category;
+}
+
+/**
+ * 获取角色显示名称
+ */
+export function getRoleDisplayName(role: AuthorRole): string {
+  const names: Record<AuthorRole, string> = {
+    'doctor': '医生',
+    'patient': '患者',
+    'researcher': '研究人员',
+    'pharmacist': '药师',
+    'nurse': '护士',
+    'administrator': '管理员',
+    'medical-student': '医学生',
+    'other': '其他'
+  };
+  return names[role] || role;
+}
+
+/**
+ * 获取状态显示名称
+ */
+export function getStatusDisplayName(status: DataStatus): string {
+  const names: Record<DataStatus, string> = {
+    'active': '活跃',
+    'withdrawn': '已撤回',
+    'corrected': '已修正',
+    'archived': '已归档',
+    'deprecated': '已弃用'
+  };
+  return names[status] || status;
+}
+
+/**
+ * 创建新帖子的数据（不包括自动生成的字段）
+ */
+export type CreatePostData = Omit<MedicalPost, 
+  'id' | 'createdAt' | 'status' | 'version' | 
+  'viewCount' | 'likeCount' | 'commentCount' | 'shareCount' | 'saveCount' |
+  'isFeatured' | 'isVerified' | 'storageTier' | 'estimatedValueScore' |
+  'lastAccessedAt' | 'relatedPostIds' | 'metadata'
+>;
+
+/**
+ * 更新帖子的数据
+ */
+export type UpdatePostData = Partial<Omit<MedicalPost, 
+  'id' | 'authorId' | 'authorName' | 'authorRole' | 'createdAt' | 'entityType'
+>>;
+
+// ==================== 导出所有类型 ====================
+
+/**
+ * 医疗数据模型工具集
+ */
+export const MedicalDataUtils = {
+  getCategoryDisplayName,
+  getRoleDisplayName,
+  getStatusDisplayName,
+  isMessagePost,
+  isMedicalCasePost,
+  isConsultationPost,
+  
+  /**
+   * 创建默认的医疗帖子
+   */
+  createDefaultPost(authorInfo: {
+    id: string;
+    name: string;
+    role: AuthorRole;
+  }): Omit<MedicalPost, 'id' | 'createdAt'> {
+    return {
+      entityType: 'message',
+      title: '',
+      content: '',
+      tags: [],
+      keywords: [],
+      authorId: authorInfo.id,
+      authorName: authorInfo.name,
+      authorRole: authorInfo.role,
+      status: 'active',
+      version: 1,
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
+      saveCount: 0,
+      isFeatured: false,
+      isVerified: false,
+      storageTier: 'hot',
+      estimatedValueScore: 50,
+      relatedPostIds: [],
+      metadata: {}
+    };
+  },
+  
+  /**
+   * 从微信内容创建导入数据
+   */
+  createFromWeChatContent(
+    wechatContent: string,
+    authorInfo: { id: string; name: string; role: AuthorRole },
+    category?: MessageCategory
+  ): CreatePostData {
+    // 自动提取标题（第一行或前50字符）
+    const firstLine = wechatContent.split('\n')[0];
+    const title = firstLine.length > 50 ? firstLine.substring(0, 50) + '...' : firstLine;
+    
+    // 自动提取关键词（简单实现）
+    const medicalKeywords = ['治疗', '药物', '病例', '医院', '医生', '患者', '疗效', '副作用'];
+    const foundKeywords = medicalKeywords.filter(keyword => 
+      wechatContent.includes(keyword)
+    );
+    
+    return {
+      entityType: 'message',
+      title: title || '微信分享内容',
+      content: wechatContent,
+      summary: wechatContent.length > 100 ? wechatContent.substring(0, 100) + '...' : wechatContent,
+      category,
+      tags: foundKeywords,
+      keywords: foundKeywords,
+      authorId: authorInfo.id,
+      authorName: authorInfo.name,
+      authorRole: authorInfo.role,
+      sourceType: 'wechat',
+      originalWeChatContent: wechatContent,
+      medicalField: undefined,
+      evidenceLevel: undefined,
+      patientInfo: undefined,
+      treatmentOutcome: undefined
+    };
+  }
+};

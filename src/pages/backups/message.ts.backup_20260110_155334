@@ -1,0 +1,50 @@
+﻿// src/types/message.ts
+// 消息类型桥梁文件 - 重新导出共享类型，为五大功能提供统一类型入口
+
+// ==================== 从共享消息类型导出 ====================
+export * from '../shared/types/message';
+
+// ==================== 兼容性类型导出（为现有代码提供支持） ====================
+
+// 注意：以下类型在新的类型体系中可能有对应的类型
+// 建议逐步迁移到新的类型体系
+
+/**
+ * @deprecated 请使用 MessageBase 或具体消息类型
+ * 原 MessageItem 在 core.ts 中不存在
+ */
+// export type { MessageItem } from '../shared/types/message/core';
+
+/**
+ * @deprecated 请使用 Comment 或具体类型的评论
+ * 原 MessageComment 在 core.ts 中不存在
+ */
+// export type { MessageComment } from '../shared/types/message/core';
+
+/**
+ * @deprecated 请使用 MessageCategory 枚举
+ */
+export { MessageCategory } from '../shared/types/message/base';
+
+/**
+ * @deprecated 请使用相应的服务接口
+ * 原 MessageService 在 core.ts 中不存在
+ */
+// export type { MessageService } from '../shared/types/message/core';
+
+/**
+ * @deprecated 请使用 MessageQueryOptions
+ */
+export type { MessageQueryOptions } from '../shared/types/message/base';
+
+// ==================== 工具函数重新导出 ====================
+// 注意：utils 模块不存在
+// export {
+//   formatMessageTime,
+//   getCategoryIcon,
+//   getCategoryName
+// } from '../shared/types/message/utils';
+
+// ==================== 默认数据重新导出 ====================
+// 注意：data 模块不存在
+// export { defaultMessageCategories } from '../shared/types/message/data';

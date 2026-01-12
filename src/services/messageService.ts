@@ -1,4 +1,4 @@
-// src/services/messageService.ts
+﻿// src/services/messageService.ts
 import { MessageItem, MessageCategory, MessageComment } from '../types/message';
 
 class MessageService {
@@ -31,7 +31,7 @@ class MessageService {
       {
         id: 'special_effect',
         name: '特效分享',
-        icon: '🌟',
+        icon: '✨',
         description: '特效治疗方案和经验分享',
         count: 15
       },
@@ -117,7 +117,7 @@ class MessageService {
     }
   }
 
-  // 增加浏览量
+  // 增加浏览数
   incrementViewCount(messageId: string): void {
     const messages = this.getAllMessages();
     const messageIndex = messages.findIndex(msg => msg.id === messageId);
@@ -162,7 +162,7 @@ class MessageService {
         id: '2',
         type: 'professional_article',
         title: '中医治疗慢性胃炎的临床研究',
-        content: '本研究通过对200例慢性胃炎患者的中医治疗观察，发现中药组方在改善症状和胃镜表现方面显著优于对照组...',
+        content: '本研究通过对300例慢性胃炎患者的中医治疗观察，发现中药组方在改善症状和胃镜表现方面显著优于对照组...',
         author: '王教授',
         publishTime: '2025-01-14 14:20',
         viewCount: 156,
@@ -190,7 +190,7 @@ class MessageService {
         id: '4',
         type: 'special_effect',
         title: '针灸治疗偏头痛的特效穴位',
-        content: '通过多年临床实践，发现太阳穴配合风池穴的针灸治疗对偏头痛有显著效果，有效率达到85%以上...',
+        content: '通过多年临床实践，发现太阳穴配合风池穴的针灸治疗对偏头痛有显著效果，有效率可达85%以上...',
         author: '张针灸师',
         publishTime: '2025-01-12 11:30',
         viewCount: 278,
