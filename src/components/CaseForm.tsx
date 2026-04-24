@@ -1,33 +1,28 @@
 // src/components/CaseForm.tsx
 import React, { useState } from 'react';
-
-interface MedicalCase {
-  id: string;
-  title: string;
-  patientName: string;
-  diagnosis: string;
-  symptoms: string[];
-  createdAt: string;
-  tags: string[];
-  description?: string;
-  treatment?: string;
-  outcome?: string;
-  imageUrls?: string[];
-  isFavorite?: boolean;
-}
+// 1. 导入共享类型
+import { MedicalCase } from '../shared/types/case';
+// 2. 导入服务
+import { caseService } from '../shared/services/caseService';
 
 interface CaseFormProps {
-  onSubmit: (caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>) => void;
+  onSubmit?: (caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>) => void;
   onCancel?: () => void;
   initialData?: Partial<Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>>;
   isSubmitting?: boolean;
+  // 新增：直接保存模式（不依赖外部onSubmit）
+  onSuccess?: (savedCase: MedicalCase) => void;
+  // 新增：是否在保存后自动导航
+  autoNavigate?: boolean;
 }
 
 const CaseForm: React.FC<CaseFormProps> = ({ 
   onSubmit, 
   onCancel, 
   initialData = {}, 
-  isSubmitting = false 
+  isSubmitting: externalIsSubmitting,
+  onSuccess,
+  autoNavigate = true
 }) => {
   const [formData, setFormData] = useState({
     title: '',
@@ -45,6 +40,10 @@ const CaseForm: React.FC<CaseFormProps> = ({
   const [currentSymptom, setCurrentSymptom] = useState('');
   const [currentTag, setCurrentTag] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [internalIsSubmitting, setInternalIsSubmitting] = useState(false);
+
+  // 使用外部或内部提交状态
+  const isSubmitting = externalIsSubmitting !== undefined ? externalIsSubmitting : internalIsSubmitting;
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -100,7 +99,7 @@ const CaseForm: React.FC<CaseFormProps> = ({
       return;
     }
 
-    // 准备提交数据，确保与 MedicalCase 接口匹配
+    // 准备提交数据
     const caseData = {
       title: formData.title.trim(),
       patientName: formData.patientName.trim(),
@@ -113,8 +112,37 @@ const CaseForm: React.FC<CaseFormProps> = ({
       imageUrls: formData.imageUrls
     };
 
-    console.log('提交医案数据:', caseData);
-    await onSubmit(caseData);
+    // 如果有外部onSubmit，使用外部方法
+    if (onSubmit) {
+      await onSubmit(caseData);
+      return;
+    }
+
+    // 否则直接使用服务保存
+    setInternalIsSubmitting(true);
+    try {
+      console.log('保存医案数据:', caseData);
+      const savedCase = caseService.createCase(caseData);
+      
+      // 调用成功回调
+      if (onSuccess) {
+        onSuccess(savedCase);
+      }
+      
+      // 显示成功消息
+      alert('医案发布成功！');
+      
+      // 自动导航（如果需要）
+      if (autoNavigate) {
+        // 这里可以用useNavigate，但需要在组件内使用
+        // 我们通过onSuccess让父组件处理导航
+      }
+    } catch (error) {
+      console.error('保存医案失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setInternalIsSubmitting(false);
+    }
   };
 
   const removeSymptom = (symptomToRemove: string) => {

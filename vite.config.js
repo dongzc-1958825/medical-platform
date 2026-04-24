@@ -5,7 +5,7 @@ import path from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/medical-platform/', // 关键修复：适配 GitHub Pages 项目站点路径
+  base: '/medical-platform/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -17,11 +17,14 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'docs', // GitHub Pages 部署目录
+    outDir: 'docs',
     sourcemap: false,
   },
   server: {
+    host: '0.0.0.0',  // ✅ 允许局域网访问（关键！）
     port: 5173,
     open: true,
+    strictPort: true,
+    cors: true,
   }
 })

@@ -1,7 +1,7 @@
 ﻿import React from 'react';
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
-import { LogOut, User as UserIcon } from 'lucide-react';
+import { User as UserIcon } from 'lucide-react';
 import MobileBottomNav from './MobileBottomNav';
 import Logo from '../Logo/Logo';
 
@@ -16,28 +16,27 @@ const MobileLayout = () => {
 
   const handleLogout = async () => {
     console.log('🚨 [原子化退出] 开始');
-    console.log('🔗 退出后将重定向到移动端登录页');
     
-    // 步骤0: 立即禁用按钮，防止重复点击
+    // 立即禁用按钮，防止重复点击
     const logoutBtn = document.querySelector('button[onClick*="handleLogout"]');
     if (logoutBtn) logoutBtn.setAttribute('disabled', 'true');
     
     try {
-      // 步骤1: 同步、立即清理最顶层的认证状态 (不等待异步)
+      // 同步清理认证状态
       console.log('⚡ [原子化退出] 步骤1: 同步清除AuthContext');
-      localStorage.removeItem('current-user'); // 先清除存储
+      localStorage.removeItem('current-user');
       
-      // 🎯 关键修复：退出时添加来源参数，告诉登录页"我从移动端来"
+      // 跳转到登录页
       console.log('⚡ [原子化退出] 步骤2: 强制哈希跳转到 #/login?from=/mobile/home');
       window.location.hash = '#/login?from=/mobile/home';
       
-      // 步骤3: 短暂延迟，确保浏览器已处理哈希跳转，再调用React的logout更新UI状态
+      // 短暂延迟，确保浏览器已处理哈希跳转
       setTimeout(async () => {
         try {
           console.log('⚡ [原子化退出] 步骤3: 调用React Context的logout');
-          await logout(); // 此时调用，用于更新React组件状态，但已无存储冲突
+          await logout();
           
-          // 步骤4: 最终安全跳转，确保在登录页（带参数）
+          // 最终安全跳转
           setTimeout(() => {
             const currentHash = window.location.hash;
             if (!currentHash.includes('#/login')) {
@@ -48,13 +47,11 @@ const MobileLayout = () => {
           }, 50);
         } catch (innerError) {
           console.error('❌ React状态更新失败:', innerError);
-          // 即使失败，用户也已在登录页，UI可能不一致但可操作
         }
-      }, 100); // 关键延迟，让哈希跳转先行
+      }, 100);
       
     } catch (outerError) {
       console.error('❌ [原子化退出] 主流程失败:', outerError);
-      // 终极后备：重载到根路径（带参数）
       const baseUrl = window.location.origin + window.location.pathname;
       window.location.href = baseUrl + '#/login?from=/mobile/home';
     }
@@ -83,6 +80,7 @@ const MobileLayout = () => {
                 <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center">
                   <UserIcon className="w-3.5 h-3.5 text-blue-600" />
                 </div>
+                <span className="text-sm text-gray-700">{user.username}</span>
                 <button
                   onClick={handleLogout}
                   className="text-xs text-gray-500 hover:text-red-600 px-1"
@@ -100,7 +98,7 @@ const MobileLayout = () => {
                 </NavLink>
                 <span className="text-gray-300">|</span>
                 <NavLink
-                  to="#/login?form=register"  // 🎯 关键修改：添加#前缀
+                  to="#/login?form=register"
                   className="text-sm text-blue-600 hover:text-blue-700 px-2"
                 >
                   注册
@@ -124,7 +122,7 @@ const MobileLayout = () => {
       )}
 
       {/* 页面内容区域 */}
-      <div className={`flex-1 px-4 ${shouldShowLogo ? 'pb-24' : 'pt-4 pb-24'}`}>
+      <div className={`flex-1 relative min-h-screen px-4 ${shouldShowLogo ? 'pb-24' : 'pt-4 pb-24'}`}>
         <Outlet />
       </div>
 

@@ -1,7 +1,9 @@
-﻿import * as React from 'react';
+﻿// src/pages/MessagesPage.tsx - 修复版本
+import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { messageService } from '../services/messageService';
 import { MessageItem, MessageCategory } from '../types/message';
+import CollectButton from '@/components/collection/CollectButton';
 
 const MessagesPage: React.FC = () => {
   const [categories, setCategories] = useState<MessageCategory[]>([]);
@@ -13,6 +15,29 @@ const MessagesPage: React.FC = () => {
     loadCategories();
     loadMessages();
   }, [selectedCategory]);
+
+  // 🆕 添加：监听收藏变化事件
+  useEffect(() => {
+    const handleCollectionChanged = () => {
+      console.log('MessagesPage: 收藏状态变化，重新加载消息');
+      loadMessages();
+      
+      // 如果当前正在查看详情，也更新详情页数据
+      if (selectedMessage) {
+        const updatedMessages = messageService.getMessagesByCategory(selectedCategory);
+        const updatedMessage = updatedMessages.find(msg => msg.id === selectedMessage.id);
+        if (updatedMessage) {
+          setSelectedMessage(updatedMessage);
+        }
+      }
+    };
+
+    window.addEventListener('medical-collections-changed', handleCollectionChanged);
+    
+    return () => {
+      window.removeEventListener('medical-collections-changed', handleCollectionChanged);
+    };
+  }, [selectedMessage, selectedCategory]);
 
   const loadCategories = () => {
     const data = messageService.getCategories();
@@ -100,6 +125,23 @@ const MessagesPage: React.FC = () => {
               <span>❤️</span>
               <span>{selectedMessage.likeCount}</span>
             </button>
+            
+            {/* 🆕 添加：收藏按钮 */}
+            <CollectButton
+              module="message"
+              moduleItemId={selectedMessage.id}
+              itemType={selectedMessage.type}
+              title={selectedMessage.title}
+              content={selectedMessage.content}
+              tags={selectedMessage.tags || []}
+              metadata={{
+                author: selectedMessage.author,
+                publishTime: selectedMessage.publishTime
+              }}
+              size="md"
+              showCount={true}
+            />
+            
             <div className="flex items-center space-x-4 text-sm text-gray-500">
               <span>📝 {selectedMessage.commentCount} 评论</span>
               <span>👁️ {selectedMessage.viewCount} 浏览</span>
@@ -168,37 +210,60 @@ const MessagesPage: React.FC = () => {
         {messages.map(message => (
           <div
             key={message.id}
-            onClick={() => handleMessageSelect(message)}
-            className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-blue-200 cursor-pointer transition-colors"
+            className="bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-blue-200 transition-colors"
           >
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="font-semibold text-gray-800 flex-1 pr-2">{message.title}</h3>
-              {message.isPinned && (
-                <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">置顶</span>
-              )}
+            {/* 点击区域只包含标题和内容 */}
+            <div 
+              onClick={() => handleMessageSelect(message)}
+              className="cursor-pointer"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <h3 className="font-semibold text-gray-800 flex-1 pr-2">{message.title}</h3>
+                {message.isPinned && (
+                  <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">置顶</span>
+                )}
+              </div>
+              
+              <p className="text-gray-600 text-sm line-clamp-2 mb-3">{message.content}</p>
+              
+              <div className="flex justify-between items-center text-sm text-gray-500">
+                <div className="flex items-center space-x-4">
+                  <span>{message.author}</span>
+                  <span>{formatTime(message.publishTime)}</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <span className="flex items-center space-x-1">
+                    <span>❤️</span>
+                    <span>{message.likeCount}</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span>💬</span>
+                    <span>{message.commentCount}</span>
+                  </span>
+                  <span className="flex items-center space-x-1">
+                    <span>👁️</span>
+                    <span>{message.viewCount}</span>
+                  </span>
+                </div>
+              </div>
             </div>
             
-            <p className="text-gray-600 text-sm line-clamp-2 mb-3">{message.content}</p>
-            
-            <div className="flex justify-between items-center text-sm text-gray-500">
-              <div className="flex items-center space-x-4">
-                <span>{message.author}</span>
-                <span>{formatTime(message.publishTime)}</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <span className="flex items-center space-x-1">
-                  <span>❤️</span>
-                  <span>{message.likeCount}</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span>💬</span>
-                  <span>{message.commentCount}</span>
-                </span>
-                <span className="flex items-center space-x-1">
-                  <span>👁️</span>
-                  <span>{message.viewCount}</span>
-                </span>
-              </div>
+            {/* 🆕 添加：收藏按钮区域 - 不参与点击跳转 */}
+            <div className="flex justify-end mt-3 pt-3 border-t border-gray-100">
+              <CollectButton
+                module="message"
+                moduleItemId={message.id}
+                itemType={message.type}
+                title={message.title}
+                content={message.content}
+                tags={message.tags || []}
+                metadata={{
+                  author: message.author,
+                  publishTime: message.publishTime
+                }}
+                size="sm"
+                showCount={true}
+              />
             </div>
           </div>
         ))}
@@ -216,5 +281,3 @@ const MessagesPage: React.FC = () => {
 };
 
 export default MessagesPage;
-
-

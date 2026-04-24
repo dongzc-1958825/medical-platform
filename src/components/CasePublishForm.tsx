@@ -1,27 +1,31 @@
 // src/components/CasePublishForm.tsx
 import React, { useState, useEffect, useCallback } from 'react';
-
-interface MedicalCase {
-  id: string;
-  title: string;
-  patientName: string;
-  diagnosis: string;
-  symptoms: string[];
-  createdAt: string;
-  tags: string[];
-  description?: string;
-  treatment?: string;
-  outcome?: string;
-  imageUrls?: string[];
-  isFavorite?: boolean;
-}
+// 导入共享类型
+import { MedicalCase } from '../shared/types/case';
+// 导入服务
+import { caseService } from '../shared/services/caseService';
 
 interface CasePublishFormProps {
   onClose: () => void;
-  onPublish: (caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>) => void;
+  onPublish?: (caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>) => void;
+  // 新增：发布成功回调
+  onSuccess?: (savedCase: MedicalCase) => void;
+  // 新增：初始数据（用于编辑）
+  initialData?: Partial<Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>>;
+  // 新增：是否为编辑模式
+  isEditMode?: boolean;
+  // 新增：要编辑的医案ID
+  caseId?: string;
 }
 
-const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish }) => {
+const CasePublishForm: React.FC<CasePublishFormProps> = ({ 
+  onClose, 
+  onPublish,
+  onSuccess,
+  initialData = {},
+  isEditMode = false,
+  caseId
+}) => {
   const [formData, setFormData] = useState({
     title: '',
     patientName: '',
@@ -31,7 +35,8 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
     treatment: '',
     outcome: '',
     tags: [] as string[],
-    imageUrls: [] as string[]
+    imageUrls: [] as string[],
+    ...initialData
   });
 
   const [currentSymptom, setCurrentSymptom] = useState('');
@@ -127,7 +132,7 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
     setIsSubmitting(true);
 
     try {
-      // 准备提交数据，确保与 MedicalCase 接口匹配
+      // 准备提交数据
       const caseData = {
         title: formData.title.trim(),
         patientName: formData.patientName.trim(),
@@ -141,13 +146,40 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
       };
 
       console.log('提交医案数据:', caseData);
-      await onPublish(caseData);
+
+      // 如果有外部onPublish，使用外部方法
+      if (onPublish) {
+        await onPublish(caseData);
+      } else {
+        // 否则直接使用服务保存
+        let savedCase: MedicalCase;
+        
+        if (isEditMode && caseId) {
+          // 编辑模式：更新现有医案
+          const existingCase = caseService.getCaseById(caseId);
+          if (existingCase) {
+            savedCase = caseService.updateCase(caseId, caseData) as MedicalCase;
+            alert('医案更新成功！');
+          } else {
+            throw new Error('未找到要编辑的医案');
+          }
+        } else {
+          // 创建模式：新建医案
+          savedCase = caseService.createCase(caseData);
+          alert('医案发布成功！');
+        }
+        
+        // 调用成功回调
+        if (onSuccess) {
+          onSuccess(savedCase);
+        }
+      }
       
       // 成功发布后关闭模态框
       onClose();
     } catch (error) {
       console.error('发布医案失败:', error);
-      alert('发布失败，请重试');
+      alert(isEditMode ? '更新失败，请重试' : '发布失败，请重试');
     } finally {
       setIsSubmitting(false);
     }
@@ -167,7 +199,7 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
     }));
   };
 
-  // 模拟图片上传功能（实际项目中需要集成真实的图片上传）
+  // 模拟图片上传功能
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
@@ -225,7 +257,9 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
       >
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">创建新医案</h2>
+            <h2 className="text-2xl font-bold text-gray-800">
+              {isEditMode ? '编辑医案' : '创建新医案'}
+            </h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 text-2xl transition-colors p-2"
@@ -492,7 +526,9 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({ onClose, onPublish })
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-300 disabled:cursor-not-allowed"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? '发布中...' : '发布医案'}
+                {isSubmitting 
+                  ? (isEditMode ? '更新中...' : '发布中...') 
+                  : (isEditMode ? '更新医案' : '发布医案')}
               </button>
             </div>
           </form>

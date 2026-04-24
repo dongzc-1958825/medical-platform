@@ -1,662 +1,366 @@
-﻿import React, { useState, useEffect } from "react";
-import { useAuth } from "../../shared/hooks/useAuth";
-import { Search, Plus, Eye, Heart, Share2, Building, User, Calendar, MapPin, Filter, X } from "lucide-react";
+﻿// src/pages/mobile/MobileCasesPage.tsx
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { 
+  Heart, 
+  MessageCircle, 
+  Search,
+  X,
+  User,
+  Clock,
+  Image,
+  Trash2
+} from 'lucide-react';
+import { useAuth } from '../../shared/hooks/useAuth';
+import CollectButton from '../../components/collection/CollectButton';
 
-// 模拟数据 - 医案列表（与桌面端相同）
-const mockCases = [
-  {
-    id: 1,
-    title: "高血压管理案例",
-    patientName: "李女士",
-    diagnosis: "原发性高血压",
-    symptoms: ["头晕", "心悸", "耳鸣"],
-    createdAt: "2025-11-04",
-    viewCount: 342,
-    likeCount: 28,
-    shareCount: 12,
-    doctorName: "张医生",
-    hospital: "北京协和医院",
-    isFeatured: true,
-    age: 58,
-    gender: "女"
-  },
-  {
-    id: 2,
-    title: "糖尿病调理案例",
-    patientName: "张先生",
-    diagnosis: "2型糖尿病",
-    symptoms: ["多饮", "多尿", "体重下降"],
-    createdAt: "2025-11-03",
-    viewCount: 218,
-    likeCount: 15,
-    shareCount: 8,
-    doctorName: "王医生",
-    hospital: "上海瑞金医院",
-    isFeatured: true,
-    age: 45,
-    gender: "男"
-  },
-  {
-    id: 3,
-    title: "颈椎病康复案例",
-    patientName: "王女士",
-    diagnosis: "颈椎病",
-    symptoms: ["颈部疼痛", "上肢麻木", "头晕"],
-    createdAt: "2025-11-02",
-    viewCount: 156,
-    likeCount: 9,
-    shareCount: 5,
-    doctorName: "李医生",
-    hospital: "广州中山医院",
-    isFeatured: false,
-    age: 32,
-    gender: "女"
-  },
-  {
-    id: 4,
-    title: "中医调理失眠案例",
-    patientName: "陈先生",
-    diagnosis: "失眠症",
-    symptoms: ["入睡困难", "多梦易醒", "白天疲倦"],
-    createdAt: "2025-11-01",
-    viewCount: 189,
-    likeCount: 12,
-    shareCount: 6,
-    doctorName: "孙医生",
-    hospital: "成都中医药大学附属医院",
-    isFeatured: true,
-    age: 41,
-    gender: "男"
-  },
-  {
-    id: 5,
-    title: "小儿发热处理案例",
-    patientName: "小明",
-    age: 4,
-    diagnosis: "急性上呼吸道感染",
-    symptoms: ["发热", "咳嗽", "流涕"],
-    createdAt: "2025-10-30",
-    viewCount: 275,
-    likeCount: 21,
-    shareCount: 11,
-    doctorName: "赵医生",
-    hospital: "南京儿童医院",
-    isFeatured: false,
-    gender: "男"
-  },
-  {
-    id: 6,
-    title: "产后抑郁调理案例",
-    patientName: "刘女士",
-    diagnosis: "产后抑郁症",
-    symptoms: ["情绪低落", "失眠", "食欲不振"],
-    createdAt: "2025-10-28",
-    viewCount: 132,
-    likeCount: 8,
-    shareCount: 4,
-    doctorName: "周医生",
-    hospital: "武汉同济医院",
-    isFeatured: false,
-    age: 29,
-    gender: "女"
-  }
-];
+interface MedicalCase {
+  id: string;
+  title: string;
+  patientName: string;
+  diagnosis: string;
+  symptoms: string[];
+  createdAt: string;
+  tags: string[];
+  description?: string;
+  treatment?: string;
+  outcome?: string;
+  imageUrls?: string[];
+  isFavorite?: boolean;
+  likeCount?: number;
+  commentCount?: number;
+  isLiked?: boolean;
+  author?: string;
+  authorId?: string;
+}
 
-// 模拟症状标签（移动端精选）
-const symptomTags = [
-  "发热", "咳嗽", "头痛", "头晕", "心悸", "腹痛", "失眠", "关节痛"
-];
+const MobileCasesPage: React.FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [cases, setCases] = useState<MedicalCase[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'recent' | 'favorites'>('all');
+  const [showSearch, setShowSearch] = useState(false);
+  
+  // 删除确认弹窗状态
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
+  const [deletingCaseTitle, setDeletingCaseTitle] = useState('');
 
-// 模拟疾病分类（移动端精选）
-const diseaseCategories = [
-  "心血管疾病", "呼吸系统", "消化系统", "神经系统", "内分泌", "骨科", "妇科", "儿科"
-];
+  useEffect(() => {
+    loadCases();
+  }, []);
 
-// 医案卡片组件（移动端优化）
-const CaseCard: React.FC<{
-  caseData: any;
-  onView: () => void;
-  onLike: () => void;
-  onShare: () => void;
-}> = ({ caseData, onView, onLike, onShare }) => {
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(caseData.likeCount);
-
-  const handleLike = () => {
-    setLiked(!liked);
-    setLikeCount(liked ? likeCount - 1 : likeCount + 1);
-    onLike();
-  };
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-200">
-      {/* 精选标签 */}
-      {caseData.isFeatured && (
-        <div className="absolute top-3 right-3 bg-orange-500 text-white px-2 py-1 rounded text-xs font-bold z-10">
-          精选
-        </div>
-      )}
+  const loadCases = () => {
+    try {
+      setIsLoading(true);
+      const savedCases = localStorage.getItem('medical_cases');
       
-      {/* 卡片头部 */}
-      <div className="p-4">
-        <div className="flex items-start mb-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
-            <Building className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-gray-800 mb-1 line-clamp-2">
-              {caseData.title}
-            </h3>
-            <div className="flex items-center text-gray-600 text-sm">
-              <User className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">{caseData.patientName} {caseData.age && `· ${caseData.age}岁`}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* 诊断信息 */}
-        <div className="mb-3">
-          <h4 className="text-blue-600 font-bold text-sm mb-2">
-            {caseData.diagnosis}
-          </h4>
-          
-          {/* 症状标签 */}
-          <div className="mb-3">
-            <div className="flex flex-wrap gap-1">
-              {caseData.symptoms.map((symptom: string, index: number) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-700"
-                >
-                  {symptom}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* 医院和时间 */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center text-gray-600 text-sm truncate">
-              <MapPin className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span className="truncate">{caseData.hospital}</span>
-            </div>
-            <div className="flex items-center text-gray-500 text-sm">
-              <Calendar className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-              <span>{caseData.createdAt}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 卡片底部 - 交互按钮 */}
-      <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-        <div className="flex items-center justify-between">
-          <button
-            onClick={onView}
-            className="flex items-center text-gray-600 hover:text-blue-600 transition-colors px-2 py-1"
-          >
-            <Eye className="w-4 h-4 mr-1" />
-            <span className="text-sm">{caseData.viewCount}</span>
-          </button>
-
-          <button
-            onClick={handleLike}
-            className="flex items-center text-gray-600 hover:text-red-500 transition-colors px-2 py-1"
-          >
-            {liked ? (
-              <Heart className="w-4 h-4 mr-1 fill-red-500 text-red-500" />
-            ) : (
-              <Heart className="w-4 h-4 mr-1" />
-            )}
-            <span className="text-sm">{likeCount}</span>
-          </button>
-
-          <button
-            onClick={onShare}
-            className="flex items-center text-gray-600 hover:text-green-600 transition-colors px-2 py-1"
-          >
-            <Share2 className="w-4 h-4 mr-1" />
-            <span className="text-sm">{caseData.shareCount}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// 发布新医案表单组件
-const NewCaseForm: React.FC<{
-  onClose: () => void;
-  onSubmit: (data: any) => void;
-}> = ({ onClose, onSubmit }) => {
-  const [formData, setFormData] = useState({
-    title: "",
-    patientName: "",
-    diagnosis: "",
-    symptoms: [] as string[],
-    age: "",
-    gender: "",
-    description: ""
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(formData);
+      if (savedCases) {
+        const parsedCases = JSON.parse(savedCases);
+        const enhancedCases = parsedCases.map((c: MedicalCase) => ({
+          ...c,
+          likeCount: c.likeCount || 0,
+          commentCount: c.commentCount || 0,
+          isLiked: c.isLiked || false
+        }));
+        setCases(enhancedCases);
+      } else {
+        // 示例数据
+        const sampleCases: MedicalCase[] = [
+          {
+            id: '1',
+            title: '感冒病例分析',
+            patientName: '张先生',
+            diagnosis: '上呼吸道感染',
+            symptoms: ['头痛', '发热', '咳嗽'],
+            createdAt: new Date().toISOString(),
+            tags: ['感冒', '呼吸道'],
+            description: '患者因发热、头痛、咳嗽前来就诊',
+            treatment: '布洛芬退热，复方甘草口服液止咳',
+            outcome: '3天后复诊，体温正常',
+            likeCount: 12,
+            commentCount: 5,
+            isLiked: false,
+            isFavorite: false
+          }
+        ];
+        setCases(sampleCases);
+        localStorage.setItem('medical_cases', JSON.stringify(sampleCases));
+      }
+    } catch (error) {
+      console.error('加载医案数据失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSymptomClick = (symptom: string) => {
-    setFormData(prev => ({
-      ...prev,
-      symptoms: prev.symptoms.includes(symptom)
-        ? prev.symptoms.filter(s => s !== symptom)
-        : [...prev.symptoms, symptom]
+  const filteredCases = useMemo(() => {
+    let result = cases;
+    if (selectedFilter === 'recent') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      result = result.filter(c => new Date(c.createdAt) >= oneWeekAgo);
+    } else if (selectedFilter === 'favorites') {
+      result = result.filter(c => c.isFavorite);
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        c.title.toLowerCase().includes(term) ||
+        c.diagnosis.toLowerCase().includes(term) ||
+        c.symptoms.some(s => s.toLowerCase().includes(term))
+      );
+    }
+    return result;
+  }, [cases, searchTerm, selectedFilter]);
+
+  const handleLike = (id: string) => {
+    setCases(prev => prev.map(c => {
+      if (c.id === id) {
+        const newLiked = !c.isLiked;
+        return {
+          ...c,
+          isLiked: newLiked,
+          likeCount: (c.likeCount || 0) + (newLiked ? 1 : -1)
+        };
+      }
+      return c;
     }));
   };
 
+    const handleDeleteClick = (id: string, title: string) => {
+    // 获取当前用户和医案信息
+    const userStr = localStorage.getItem('current-user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const caseItem = cases.find(c => c.id === id);
+    
+    // 只有作者或超级管理员可以删除
+    const isAuthor = user?.id === caseItem?.authorId;
+    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
+    
+    if (!isAuthor && !isAdmin) {
+      alert('您没有权限删除此医案');
+      return;
+    }
+    
+    setDeletingCaseId(id);
+    setDeletingCaseTitle(title);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deletingCaseId) {
+      const updatedCases = cases.filter(c => c.id !== deletingCaseId);
+      setCases(updatedCases);
+      localStorage.setItem('medical_cases', JSON.stringify(updatedCases));
+    }
+    setShowDeleteConfirm(false);
+    setDeletingCaseId(null);
+    setDeletingCaseTitle('');
+  };
+
+  const handleFavoriteToggle = (id: string, collected: boolean) => {
+    setCases(prev => prev.map(c => 
+      c.id === id ? { ...c, isFavorite: collected } : c
+    ));
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return '今天';
+    if (diffDays === 1) return '昨天';
+    if (diffDays <= 7) return `${diffDays}天前`;
+    return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-800">发布新医案</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
+    <div className="min-h-screen bg-gray-50">
+      {/* 顶部导航栏 */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="flex items-center justify-between px-4 py-3">
+          <h1 className="text-xl font-bold text-gray-900">医案分享</h1>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Search className="w-5 h-5 text-gray-600" />
+            </button>
+            <button
+              onClick={() => navigate('/mobile/cases/create')}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
+            >
+              发布
+            </button>
+          </div>
+        </div>
+
+        {showSearch && (
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="搜索医案..."
+                className="w-full pl-10 pr-10 py-2 bg-gray-100 border-0 rounded-lg text-sm"
+                autoFocus
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <X className="w-4 h-4 text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 筛选标签 */}
+        <div className="px-4 pb-3 flex space-x-2">
+          <button
+            onClick={() => setSelectedFilter('all')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+              selectedFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            全部
+          </button>
+          <button
+            onClick={() => setSelectedFilter('recent')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+              selectedFilter === 'recent' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            最近一周
+          </button>
+          <button
+            onClick={() => setSelectedFilter('favorites')}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
+              selectedFilter === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            我的收藏
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              医案标题 *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.title}
-              onChange={e => setFormData({...formData, title: e.target.value})}
-              placeholder="例如：高血压管理案例"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                患者姓名
-              </label>
-              <input
-                type="text"
-                value={formData.patientName}
-                onChange={e => setFormData({...formData, patientName: e.target.value})}
-                placeholder="可匿名"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                年龄
-              </label>
-              <input
-                type="number"
-                value={formData.age}
-                onChange={e => setFormData({...formData, age: e.target.value})}
-                placeholder="岁"
-                className="w-full p-3 border border-gray-300 rounded-lg"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              主要诊断 *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.diagnosis}
-              onChange={e => setFormData({...formData, diagnosis: e.target.value})}
-              placeholder="例如：原发性高血压"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              主要症状
-            </label>
-            <div className="flex flex-wrap gap-2 mb-2">
-              {symptomTags.map(symptom => (
-                <button
-                  type="button"
-                  key={symptom}
-                  onClick={() => handleSymptomClick(symptom)}
-                  className={`px-3 py-1.5 rounded-lg text-sm ${
-                    formData.symptoms.includes(symptom)
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {symptom}
-                </button>
-              ))}
-            </div>
-            {formData.symptoms.length > 0 && (
-              <p className="text-sm text-gray-600">
-                已选: {formData.symptoms.join(", ")}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              详细描述
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              placeholder="请详细描述病情、诊疗过程、治疗效果等..."
-              rows={4}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-            >
-              取消
-            </button>
-            <button
-              type="submit"
-              className="flex-1 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              发布医案
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const MobileCasesPage: React.FC = () => {
-  const { user, isLoading } = useAuth();
-  const [cases, setCases] = useState(mockCases);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [showNewCaseForm, setShowNewCaseForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<"browse" | "new">("browse");
-
-  // 处理搜索
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
-  // 处理症状选择
-  const handleSymptomClick = (symptom: string) => {
-    if (selectedSymptoms.includes(symptom)) {
-      setSelectedSymptoms(selectedSymptoms.filter(s => s !== symptom));
-    } else {
-      setSelectedSymptoms([...selectedSymptoms, symptom]);
-    }
-  };
-
-  // 处理类别选择
-  const handleCategoryClick = (category: string) => {
-    setSelectedCategory(category === selectedCategory ? "" : category);
-  };
-
-  // 清空筛选
-  const handleClearFilters = () => {
-    setSelectedSymptoms([]);
-    setSelectedCategory("");
-    setSearchTerm("");
-    setShowFilters(false);
-  };
-
-  // 发布新医案
-  const handleCreateNewCase = (formData: any) => {
-    console.log("发布新医案:", formData);
-    alert("医案发布成功！（演示功能）");
-    setShowNewCaseForm(false);
-  };
-
-  // 过滤医案
-  useEffect(() => {
-    let filtered = [...mockCases];
-
-    // 按搜索词过滤
-    if (searchTerm) {
-      filtered = filtered.filter(caseItem => 
-        caseItem.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.diagnosis.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        caseItem.symptoms.some((symptom: string) => 
-          symptom.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
-    }
-
-    // 按症状过滤
-    if (selectedSymptoms.length > 0) {
-      filtered = filtered.filter(caseItem =>
-        selectedSymptoms.every(symptom =>
-          caseItem.symptoms.includes(symptom)
-        )
-      );
-    }
-
-    // 按类别过滤
-    if (selectedCategory) {
-      filtered = filtered.filter(caseItem =>
-        caseItem.diagnosis.includes(selectedCategory) ||
-        caseItem.symptoms.some((symptom: string) => 
-          symptom.includes(selectedCategory)
-        )
-      );
-    }
-
-    setCases(filtered);
-  }, [searchTerm, selectedSymptoms, selectedCategory]);
-
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-gray-500">加载中...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="p-6 text-center">
-        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-2xl">📋</span>
-        </div>
-        <h3 className="text-lg font-medium text-gray-700 mb-2">请先登录</h3>
-        <p className="text-gray-500 mb-4">登录后查看和分享医案</p>
-        <button
-          onClick={() => window.location.href = "/login"}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          前往登录
-        </button>
-      </div>
-    );
-  }
-
-  if (showNewCaseForm) {
-    return <NewCaseForm onClose={() => setShowNewCaseForm(false)} onSubmit={handleCreateNewCase} />;
-  }
-
-  return (
-    <div className="pb-24"> {/* 给底部导航和发布按钮留空间 */}
-      {/* 顶部标题栏 */}
-      <div className="px-4 pt-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600">
-              📋
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">医案分享</h1>
-              <p className="text-sm text-gray-600">浏览和学习真实医疗案例</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-lg ${showFilters ? "bg-blue-100 text-blue-600" : "hover:bg-gray-100"}`}
-            >
-              <Filter className="w-5 h-5" />
-            </button>
-          </div>
+        <div className="px-4 pb-3">
+          <span className="text-sm text-gray-500">共 {filteredCases.length} 个医案</span>
         </div>
       </div>
-
-      {/* 搜索框 */}
-      <div className="px-4 py-3 bg-white border-y">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="搜索医案、疾病、症状..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => setSearchTerm("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* 筛选面板 */}
-      {showFilters && (
-        <div className="bg-white border-b p-4 space-y-4">
-          {/* 症状筛选 */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="font-medium text-gray-800">症状筛选</h3>
-              {selectedSymptoms.length > 0 && (
-                <span className="text-sm text-blue-600">{selectedSymptoms.length}个已选</span>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {symptomTags.map(symptom => (
-                <button
-                  key={symptom}
-                  onClick={() => handleSymptomClick(symptom)}
-                  className={`px-3 py-1.5 rounded-lg text-sm ${
-                    selectedSymptoms.includes(symptom)
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {symptom}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 疾病分类 */}
-          <div>
-            <h3 className="font-medium text-gray-800 mb-3">疾病分类</h3>
-            <div className="flex flex-wrap gap-2">
-              {diseaseCategories.map(category => (
-                <button
-                  key={category}
-                  onClick={() => handleCategoryClick(category)}
-                  className={`px-3 py-1.5 rounded-lg text-sm ${
-                    selectedCategory === category
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 筛选操作 */}
-          {(selectedSymptoms.length > 0 || selectedCategory || searchTerm) && (
-            <div className="pt-4 border-t">
-              <button
-                onClick={handleClearFilters}
-                className="w-full py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-              >
-                清空筛选条件
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* 医案列表 */}
       <div className="p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-800">
-            医案列表
-            {cases.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                ({cases.length}个)
-              </span>
-            )}
-          </h2>
-        </div>
-        
-        {cases.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-            <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-600 mb-2">未找到匹配的医案</h3>
-            <p className="text-gray-500 mb-4">尝试调整搜索条件</p>
-            <button
-              onClick={handleClearFilters}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              清空筛选
-            </button>
+        {isLoading ? (
+          <div className="flex justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : filteredCases.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-8 h-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500">暂无医案</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {cases.map(caseItem => (
-              <CaseCard
-                key={caseItem.id}
-                caseData={caseItem}
-                onView={() => alert(`查看医案详情: ${caseItem.title}`)}
-                onLike={() => {}}
-                onShare={() => alert(`分享医案: ${caseItem.title}`)}
-              />
+          <div className="space-y-4">
+            {filteredCases.map((caseItem) => (
+              <div key={caseItem.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 
+                      onClick={() => navigate(`/mobile/cases/${caseItem.id}`)}
+                      className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
+                    >
+                      {caseItem.title}
+                    </h3>
+                    <button
+                      onClick={() => handleDeleteClick(caseItem.id, caseItem.title)}
+                      className="p-1 hover:bg-red-50 rounded-lg transition-colors"
+                      title="删除"
+                    >
+                      <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                    <User className="w-3 h-3" />
+                    <span>{caseItem.patientName}</span>
+                    <Clock className="w-3 h-3" />
+                    <span>{formatDate(caseItem.createdAt)}</span>
+                  </div>
+
+                  <div className="mb-2">
+                    <span className="text-xs text-gray-500">诊断：</span>
+                    <span className="text-sm font-medium text-gray-900">{caseItem.diagnosis}</span>
+                  </div>
+
+                  {caseItem.symptoms.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-3">
+                      {caseItem.symptoms.map((symptom, idx) => (
+                        <span key={idx} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
+                          {symptom}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <button
+                      onClick={() => handleLike(caseItem.id)}
+                      className="flex items-center gap-1"
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${caseItem.isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
+                      />
+                      <span className="text-xs text-gray-600">{caseItem.likeCount || 0}</span>
+                    </button>
+                    <CollectButton
+                      itemId={caseItem.id}
+                      itemType="case"
+                      itemData={{
+                        title: caseItem.title,
+                        description: caseItem.description || caseItem.diagnosis,
+                        date: caseItem.createdAt
+                      }}
+                      initialCollected={caseItem.isFavorite || false}
+                      onToggle={(collected) => handleFavoriteToggle(caseItem.id, collected)}
+                    />
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* 发布按钮 - 固定在底部 */}
-      <div className="fixed bottom-20 right-4 z-10">
-        <button
-          onClick={() => setShowNewCaseForm(true)}
-          className="w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      </div>
-
-      {/* 底部提示 */}
-      {cases.length > 0 && (
-        <div className="px-4 py-3 border-t border-gray-200 bg-gray-50 text-center">
-          <p className="text-xs text-gray-600">
-            共 {cases.length} 个医案 • 数据仅供学习参考
-          </p>
+      {/* 删除确认弹窗 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-sm w-full p-6">
+            <h3 className="text-lg font-bold mb-2">确认删除</h3>
+            <p className="text-gray-600 mb-6">
+              确定要删除医案「{deletingCaseTitle}」吗？删除后无法恢复。
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+              >
+                取消
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                确认删除
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

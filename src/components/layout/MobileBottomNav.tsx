@@ -4,7 +4,7 @@ import {
   Home,           // 首页
   FileText,       // 医案分享
   Stethoscope,    // 寻医问药
-  Users,          // 专病社区
+  Users,          // 社区生活
   MessageCircle,  // 消息
   User            // 我的
 } from 'lucide-react';
@@ -27,8 +27,8 @@ export default function MobileBottomNav() {
       icon: Stethoscope
     },
     { 
-      path: '/mobile/community', 
-      label: '专病社区', 
+      path: '/mobile/community-life',  // ✅ 改为新路径
+      label: '社区生活', 
       icon: Users
     },
     { 
