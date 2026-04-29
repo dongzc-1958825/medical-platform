@@ -1,25 +1,27 @@
 ﻿// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase, checkSupabaseConnection } from "../services/supabaseClient";
+import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface User {
   id: string;
-  username: string;      // 真实姓名
-  idCard?: string;        // 身份证号
+  username: string;
+  idCard?: string;
   email: string;
-  phone?: string;         // 手机号
+  phone?: string;
   role: "patient" | "doctor" | "admin" | "super_admin";
   avatar?: string;
   specialties?: string[];
-  remark?: string;        // 备注
-  createdAt?: string;     // 注册时间
-  updatedAt?: string;     // 更新时间
+  remark?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; message?: string; user?: User }>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string; user?: User }>;
+  logout: () => Promise<void>;
   register: (userData: {
     username: string;
     idCard?: string;
@@ -30,185 +32,185 @@ export interface AuthContextType {
     role: "patient" | "doctor";
     specialties?: string[];
   }) => Promise<{ success: boolean; message?: string }>;
-  updateProfile: (userData: Partial<User>) => void;
+  updateProfile: (userData: Partial<User>) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// MOCK_USERS作为初始注册用户
-const MOCK_USERS = [
-  {
-    id: "1",
-    username: "测试用户",
-    email: "test@example.com",
-    role: "patient" as const,
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=test"
-  },
-  {
-    id: "2",
-    username: "张医生",
-    email: "doctor@example.com",
-    role: "doctor" as const,
-    specialties: ["内科", "中医"],
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=doctor"
+// 辅助函数：从 Supabase 用户获取用户资料
+const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", supabaseUser.id)
+      .single();
+
+    if (error) {
+      console.error("❌ 获取用户资料失败:", error);
+      return null;
+    }
+
+    if (data) {
+      return {
+        id: supabaseUser.id,
+        username: data.username || supabaseUser.email?.split("@")[0] || "",
+        idCard: data.idCard || "",
+        email: supabaseUser.email || "",
+        phone: data.phone || "",
+        role: data.role || "patient",
+        avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${supabaseUser.email}`,
+        specialties: data.specialties || [],
+        remark: data.remark || "",
+        createdAt: data.createdAt || supabaseUser.created_at,
+        updatedAt: data.updatedAt || "",
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ 获取用户资料异常:", error);
+    return null;
   }
-];
+};
+
+// 辅助函数：创建或更新用户资料
+const upsertProfile = async (user: SupabaseUser, userData: Partial<User>) => {
+  const profile = {
+    id: user.id,
+    username: userData.username || user.email?.split("@")[0] || "",
+    idCard: userData.idCard || "",
+    email: user.email,
+    phone: userData.phone || "",
+    role: userData.role || "patient",
+    avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`,
+    specialties: userData.specialties || [],
+    remark: userData.remark || "",
+    updatedAt: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from("profiles")
+    .upsert(profile, { onConflict: "id" });
+
+  if (error) {
+    console.error("❌ 保存用户资料失败:", error);
+    throw error;
+  }
+
+  return profile;
+};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初始化：加载当前登录用户
+  // 初始化：检查 Supabase 登录状态
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        console.log("🔄 AuthContext - 初始化，尝试恢复登录状态");
-
-        const currentUser = localStorage.getItem("current-user");
-        console.log("📦 current-user:", currentUser);
-
-        if (currentUser) {
-          const parsedUser = JSON.parse(currentUser);
-          console.log("✅ 恢复当前用户:", parsedUser.username);
-          setUser(parsedUser);
-        } else {
-          console.log("ℹ️ 没有保存的登录状态");
+    const initAuth = async () => {
+      console.log("🔄 AuthContext - 初始化 Supabase 认证");
+      
+      // 检查连接
+      await checkSupabaseConnection();
+      
+      // 获取当前会话
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user) {
+        console.log("✅ 找到现有会话，加载用户资料:", session.user.email);
+        const profile = await fetchUserProfile(session.user);
+        if (profile) {
+          setUser(profile);
         }
-      } catch (error) {
-        console.error("❌ 加载用户信息失败:", error);
-        localStorage.removeItem("current-user");
-      } finally {
-        setIsLoading(false);
+      } else {
+        console.log("ℹ️ 没有保存的登录会话");
       }
+      
+      setIsLoading(false);
     };
 
-    loadUser();
+    initAuth();
+
+    // 监听 Supabase 认证状态变化
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      console.log("🔄 Supabase 认证状态变化:", _event);
+      
+      if (session?.user) {
+        console.log("✅ 用户已登录:", session.user.email);
+        const profile = await fetchUserProfile(session.user);
+        if (profile) {
+          setUser(profile);
+        }
+      } else {
+        console.log("👋 用户已登出");
+        setUser(null);
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, []);
 
-  const login = async (username: string, password: string) => {
+  // 登录
+  const login = async (email: string, password: string) => {
     try {
       console.log("🔐 === LOGIN START ===");
-      console.log("👤 登录姓名:", username);
-      console.log("🔑 登录密码:", password);
+      console.log("📧 登录邮箱:", email);
 
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
 
-      // 1. 获取注册用户列表
-      const registeredUsersJson = localStorage.getItem("medical-registered-users");
-      const registeredUsers = registeredUsersJson ? JSON.parse(registeredUsersJson) : [];
-
-      console.log(`📈 已注册用户数: ${registeredUsers.length}`);
-
-      // 2. 按姓名或邮箱查找用户
-      const foundUser = registeredUsers.find((u: User) => u.username === username || u.email === username);
-      
-      // 如果在注册用户中没找到，检查MOCK_USERS
-      const mockUser = !foundUser ? MOCK_USERS.find(u => u.username === username) : null;
-      
-      const userToLogin = foundUser || mockUser;
-
-      if (userToLogin) {
-        console.log("✅ 找到用户:", userToLogin.username);
-        console.log("📧 用户邮箱:", userToLogin.email);
-        
-        // 从注册用户列表获取完整信息（确保角色正确）
-        const fullUser = registeredUsers.find((u: User) => u.id === userToLogin.id);
-        if (fullUser && fullUser.role) {
-          userToLogin.role = fullUser.role;
-          console.log("👑 从注册用户列表获取角色:", userToLogin.role);
-        }
-        
-        // 设置超级管理员角色 - 只有 admin@medical.com 是超级管理员
-        if (userToLogin.email === 'admin@medical.com') {
-          userToLogin.role = 'super_admin';
-          console.log('👑 设置超级管理员角色');
-        }
-        
-        // 3. 获取存储的密码（用邮箱作为key）
-        const storedPassword = localStorage.getItem(`password_${userToLogin.email}`);
-        console.log("🔑 存储的密码长度:", storedPassword?.length);
-        console.log("🔑 输入的密码长度:", password.length);
-        
-        // 4. 验证密码
-        // 对于MOCK_USERS，使用默认密码 '123456'
-        if (mockUser) {
-          if (password === '123456') {
-            console.log("✅ 默认密码验证通过");
-            setUser(userToLogin);
-            localStorage.setItem("current-user", JSON.stringify(userToLogin));
-            
-            // 检查并设置管理员权限
-            const admins = JSON.parse(localStorage.getItem('medical_admins') || '[]');
-            if (!admins.some(a => a.userId === userToLogin.id)) {
-              const adminEmails = ['admin@medical.com', 'super@medical.com'];
-              if (adminEmails.includes(userToLogin.email) || userToLogin.role === 'admin') {
-                admins.push({
-                  id: `admin_${Date.now()}`,
-                  userId: userToLogin.id,
-                  role: 'super',
-                  permissions: [],
-                  createdAt: new Date().toISOString(),
-                  lastActive: new Date().toISOString()
-                });
-                localStorage.setItem('medical_admins', JSON.stringify(admins));
-                console.log('✅ 已设置管理员权限');
-              }
-            }
-            return { success: true, user: userToLogin };
-          } else {
-            console.log("❌ 默认密码错误");
-            return { success: false, message: "密码错误" };
-          }
-        }
-        
-        // 对于注册用户，验证存储的密码
-        if (storedPassword === password) {
-          console.log("✅ 密码验证通过");
-          setUser(userToLogin);
-          localStorage.setItem("current-user", JSON.stringify(userToLogin));
-          
-          // 检查并设置管理员权限
-          const admins = JSON.parse(localStorage.getItem('medical_admins') || '[]');
-          if (!admins.some(a => a.userId === userToLogin.id)) {
-            const adminEmails = ['admin@medical.com', 'super@medical.com'];
-            if (adminEmails.includes(userToLogin.email) || userToLogin.role === 'admin') {
-              admins.push({
-                id: `admin_${Date.now()}`,
-                userId: userToLogin.id,
-                role: 'super',
-                permissions: [],
-                createdAt: new Date().toISOString(),
-                lastActive: new Date().toISOString()
-              });
-              localStorage.setItem('medical_admins', JSON.stringify(admins));
-              console.log('✅ 已设置管理员权限');
-            }
-          }
-          return { success: true, user: userToLogin };
-        } else {
-          console.log("❌ 密码错误");
-          return { success: false, message: "密码错误" };
-        }
+      if (error) {
+        console.error("❌ 登录失败:", error.message);
+        return { success: false, message: error.message };
       }
 
-      console.log("❌ 用户不存在");
-      return { success: false, message: "用户不存在" };
+      if (data.user) {
+        console.log("✅ 登录成功:", data.user.email);
+        const profile = await fetchUserProfile(data.user);
+        
+        if (profile) {
+          setUser(profile);
+          return { success: true, user: profile };
+        }
+        
+        // 如果没有 profile，创建一个基本的
+        const basicProfile: User = {
+          id: data.user.id,
+          username: data.user.email?.split("@")[0] || "",
+          email: data.user.email || "",
+          role: "patient",
+        };
+        setUser(basicProfile);
+        return { success: true, user: basicProfile };
+      }
+
+      return { success: false, message: "登录失败" };
     } catch (error) {
-      console.error("❌ 登录失败:", error);
+      console.error("❌ 登录异常:", error);
       return { success: false, message: "登录失败，请重试" };
     }
   };
 
-  const logout = () => {
+  // 登出
+  const logout = async () => {
     console.log("🚪 === LOGOUT START ===");
     console.log("👤 退出用户:", user?.username);
-    setUser(null);
-    localStorage.removeItem("current-user");
-    console.log("✅ 当前登录状态已清理");
-    // 跳转到登录页
-    window.location.hash = '#/login';
+    
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error("❌ 登出失败:", error);
+    } else {
+      console.log("✅ 登出成功");
+      setUser(null);
+    }
   };
 
+  // 注册
   const register = async (userData: {
     username: string;
     idCard?: string;
@@ -223,106 +225,108 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log("🚀 === REGISTER START ===");
       console.log("📧 注册邮箱:", userData.email);
       console.log("👤 注册姓名:", userData.username);
-      console.log("🔑 注册密码:", userData.password);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const ADMIN_EMAILS = ['admin@medical.com', 'super@medical.com'];
-      const registeredUsersJson = localStorage.getItem("medical-registered-users");
-      const registeredUsers = registeredUsersJson ? JSON.parse(registeredUsersJson) : [];
+      // 检查邮箱是否已存在
+      const { data: existingUsers, error: checkError } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("email", userData.email);
 
-      console.log("📊 当前注册用户数:", registeredUsers.length);
-
-      // 检查邮箱是否已被注册
-      const existingUser = registeredUsers.find((u: User) => u.email === userData.email);
-      const mockUser = MOCK_USERS.find(u => u.email === userData.email);
-
-      if (existingUser) {
-        console.log("📝 用户已存在，更新信息");
-        
-        const updatedUser: User = {
-          ...existingUser,
-          username: userData.username || existingUser.username,
-          idCard: userData.idCard || existingUser.idCard,
-          phone: userData.phone || existingUser.phone,
-          remark: userData.remark || existingUser.remark,
-          specialties: userData.specialties || existingUser.specialties || [],
-          avatar: existingUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
-          updatedAt: new Date().toISOString()
-        };
-
-        const updatedUsers = registeredUsers.map((u: User) =>
-          u.email === userData.email ? updatedUser : u
-        );
-        localStorage.setItem("medical-registered-users", JSON.stringify(updatedUsers));
-        
-        localStorage.setItem(`password_${userData.email}`, userData.password);
-        
-        setUser(updatedUser);
-        localStorage.setItem("current-user", JSON.stringify(updatedUser));
-        
-        console.log("🎉 用户信息更新成功");
-        return { success: true, message: "信息更新成功" };
+      if (checkError) {
+        console.error("❌ 检查用户失败:", checkError);
       }
 
-      if (mockUser) {
-        console.log("❌ 邮箱是测试账号");
-        return { success: false, message: "该邮箱是测试账号，请使用其他邮箱" };
+      if (existingUsers && existingUsers.length > 0) {
+        console.log("📝 用户已存在，尝试登录");
+        return { success: false, message: "该邮箱已注册，请直接登录" };
       }
 
-      // 创建新用户
-      const isAdminEmail = ADMIN_EMAILS.includes(userData.email) || 
-                           userData.email.endsWith('@admin.medical');
+      // 注册新用户
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email: userData.email.trim(),
+        password: userData.password,
+        options: {
+          data: {
+            username: userData.username,
+            role: userData.role,
+          },
+        },
+      });
 
-      const newUser: User = {
-        id: "user-" + Date.now(),
-        username: userData.username,
-        idCard: userData.idCard || '',
-        email: userData.email,
-        phone: userData.phone || '',
-        role: isAdminEmail ? 'admin' : userData.role,
-        specialties: userData.specialties || [],
-        remark: userData.remark || '',
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${userData.email}`,
-        createdAt: new Date().toISOString()
-      };
-
-      if (isAdminEmail) {
-        console.log('👑 管理员账号创建成功:', userData.email);
+      if (signUpError) {
+        console.error("❌ 注册失败:", signUpError.message);
+        return { success: false, message: signUpError.message };
       }
 
-      console.log("✅ 创建新用户:", newUser);
+      if (data.user) {
+        console.log("✅ 注册成功:", data.user.email);
+        
+        // 创建用户资料
+        await upsertProfile(data.user, userData);
+        
+        // 自动登录
+        const profile = await fetchUserProfile(data.user);
+        if (profile) {
+          setUser(profile);
+        }
+        
+        console.log("🎉 === REGISTER SUCCESS ===");
+        return { success: true, message: "注册成功" };
+      }
 
-      const updatedUsers = [...registeredUsers, newUser];
-      localStorage.setItem("medical-registered-users", JSON.stringify(updatedUsers));
-      
-      localStorage.setItem(`password_${userData.email}`, userData.password);
-      
-      setUser(newUser);
-      localStorage.setItem("current-user", JSON.stringify(newUser));
-
-      console.log("🎉 === REGISTER SUCCESS ===");
-      return { success: true };
+      return { success: false, message: "注册失败" };
     } catch (error) {
-      console.error("❌ 注册失败:", error);
+      console.error("❌ 注册异常:", error);
       return { success: false, message: "注册失败，请重试" };
     }
   };
 
-  const updateProfile = (userData: Partial<User>) => {
-    if (user) {
+  // 更新个人资料
+  const updateProfile = async (userData: Partial<User>) => {
+    if (!user) {
+      console.error("❌ 未登录，无法更新资料");
+      return;
+    }
+
+    try {
+      console.log("✏️ === UPDATE PROFILE START ===");
+      
+      // 获取当前 Supabase session
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session?.user) {
+        console.error("❌ 无效的 session");
+        return;
+      }
+
+      const profile = {
+        id: session.user.id,
+        username: userData.username || user.username,
+        idCard: userData.idCard || user.idCard,
+        phone: userData.phone || user.phone,
+        role: userData.role || user.role,
+        avatar: userData.avatar || user.avatar,
+        specialties: userData.specialties || user.specialties,
+        remark: userData.remark || user.remark,
+        updatedAt: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(profile, { onConflict: "id" });
+
+      if (error) {
+        console.error("❌ 更新资料失败:", error);
+        return;
+      }
+
+      // 更新本地 user 状态
       const updatedUser = { ...user, ...userData, updatedAt: new Date().toISOString() };
       setUser(updatedUser);
-      localStorage.setItem("current-user", JSON.stringify(updatedUser));
-
-      const registeredUsersJson = localStorage.getItem("medical-registered-users");
-      if (registeredUsersJson) {
-        const registeredUsers = JSON.parse(registeredUsersJson);
-        const updatedUsers = registeredUsers.map((u: User) =>
-          u.email === updatedUser.email ? updatedUser : u
-        );
-        localStorage.setItem("medical-registered-users", JSON.stringify(updatedUsers));
-      }
+      
+      console.log("✅ 个人资料更新成功");
+    } catch (error) {
+      console.error("❌ 更新资料异常:", error);
     }
   };
 
@@ -332,7 +336,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     login,
     logout,
     register,
-    updateProfile
+    updateProfile,
   };
 
   return (
@@ -345,7 +349,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
