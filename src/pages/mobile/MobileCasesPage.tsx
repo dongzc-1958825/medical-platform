@@ -8,30 +8,31 @@ import {
   X,
   User,
   Clock,
-  Image,
   Trash2
 } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth';
+import { supabase } from '../../services/supabaseClient';
 import CollectButton from '../../components/collection/CollectButton';
 
 interface MedicalCase {
   id: string;
   title: string;
-  patientName: string;
-  diagnosis: string;
-  symptoms: string[];
-  createdAt: string;
-  tags: string[];
+  content: string;
+  user_id: string;
+  created_at: string;
+  // 扩展字段（后续可添加到数据库）
+  patientName?: string;
+  diagnosis?: string;
+  symptoms?: string[];
   description?: string;
   treatment?: string;
   outcome?: string;
   imageUrls?: string[];
-  isFavorite?: boolean;
-  likeCount?: number;
-  commentCount?: number;
-  isLiked?: boolean;
-  author?: string;
-  authorId?: string;
+  // 互动字段（后续可添加到数据库）
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
+  isFavorite: boolean;
 }
 
 const MobileCasesPage: React.FC = () => {
@@ -48,47 +49,37 @@ const MobileCasesPage: React.FC = () => {
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
   const [deletingCaseTitle, setDeletingCaseTitle] = useState('');
 
-  useEffect(() => {
-    loadCases();
-  }, []);
-
-  const loadCases = () => {
+  // 加载医案列表
+  const loadCases = async () => {
     try {
       setIsLoading(true);
-      const savedCases = localStorage.getItem('medical_cases');
       
-      if (savedCases) {
-        const parsedCases = JSON.parse(savedCases);
-        const enhancedCases = parsedCases.map((c: MedicalCase) => ({
-          ...c,
-          likeCount: c.likeCount || 0,
-          commentCount: c.commentCount || 0,
-          isLiked: c.isLiked || false
-        }));
-        setCases(enhancedCases);
-      } else {
-        // 示例数据
-        const sampleCases: MedicalCase[] = [
-          {
-            id: '1',
-            title: '感冒病例分析',
-            patientName: '张先生',
-            diagnosis: '上呼吸道感染',
-            symptoms: ['头痛', '发热', '咳嗽'],
-            createdAt: new Date().toISOString(),
-            tags: ['感冒', '呼吸道'],
-            description: '患者因发热、头痛、咳嗽前来就诊',
-            treatment: '布洛芬退热，复方甘草口服液止咳',
-            outcome: '3天后复诊，体温正常',
-            likeCount: 12,
-            commentCount: 5,
-            isLiked: false,
-            isFavorite: false
-          }
-        ];
-        setCases(sampleCases);
-        localStorage.setItem('medical_cases', JSON.stringify(sampleCases));
-      }
+      // 从 Supabase 加载数据
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // 转换为组件需要的格式（保留原有字段结构）
+      const enhancedCases: MedicalCase[] = (data || []).map(c => ({
+        id: c.id,
+        title: c.title,
+        content: c.content,
+        user_id: c.user_id,
+        created_at: c.created_at,
+        // 临时从 content 提取诊断和症状（后续可拆分字段）
+        diagnosis: c.content?.substring(0, 50) || '',
+        symptoms: [],
+        patientName: c.user_id?.slice(0, 8) || '匿名',
+        likeCount: 0,
+        commentCount: 0,
+        isLiked: false,
+        isFavorite: false
+      }));
+      
+      setCases(enhancedCases);
     } catch (error) {
       console.error('加载医案数据失败:', error);
     } finally {
@@ -96,27 +87,13 @@ const MobileCasesPage: React.FC = () => {
     }
   };
 
-  const filteredCases = useMemo(() => {
-    let result = cases;
-    if (selectedFilter === 'recent') {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      result = result.filter(c => new Date(c.createdAt) >= oneWeekAgo);
-    } else if (selectedFilter === 'favorites') {
-      result = result.filter(c => c.isFavorite);
-    }
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(c => 
-        c.title.toLowerCase().includes(term) ||
-        c.diagnosis.toLowerCase().includes(term) ||
-        c.symptoms.some(s => s.toLowerCase().includes(term))
-      );
-    }
-    return result;
-  }, [cases, searchTerm, selectedFilter]);
+  useEffect(() => {
+    loadCases();
+  }, []);
 
-  const handleLike = (id: string) => {
+  // 点赞
+  const handleLike = async (id: string) => {
+    // TODO: 后续实现点赞表
     setCases(prev => prev.map(c => {
       if (c.id === id) {
         const newLiked = !c.isLiked;
@@ -130,14 +107,10 @@ const MobileCasesPage: React.FC = () => {
     }));
   };
 
-    const handleDeleteClick = (id: string, title: string) => {
-    // 获取当前用户和医案信息
-    const userStr = localStorage.getItem('current-user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const caseItem = cases.find(c => c.id === id);
-    
-    // 只有作者或超级管理员可以删除
-    const isAuthor = user?.id === caseItem?.authorId;
+  // 删除
+  const handleDeleteClick = (id: string, title: string) => {
+    // 只有作者或管理员可以删除
+    const isAuthor = user?.id === cases.find(c => c.id === id)?.user_id;
     const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
     
     if (!isAuthor && !isAdmin) {
@@ -150,22 +123,58 @@ const MobileCasesPage: React.FC = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingCaseId) {
-      const updatedCases = cases.filter(c => c.id !== deletingCaseId);
-      setCases(updatedCases);
-      localStorage.setItem('medical_cases', JSON.stringify(updatedCases));
+      try {
+        const { error } = await supabase
+          .from('cases')
+          .delete()
+          .eq('id', deletingCaseId);
+        
+        if (error) throw error;
+        
+        // 刷新列表
+        await loadCases();
+      } catch (error) {
+        console.error('删除失败:', error);
+        alert('删除失败，请重试');
+      }
     }
     setShowDeleteConfirm(false);
     setDeletingCaseId(null);
     setDeletingCaseTitle('');
   };
 
+  // 收藏
   const handleFavoriteToggle = (id: string, collected: boolean) => {
     setCases(prev => prev.map(c => 
       c.id === id ? { ...c, isFavorite: collected } : c
     ));
+    // TODO: 后续同步到 Supabase 收藏表
   };
+
+  // 筛选逻辑
+  const filteredCases = useMemo(() => {
+    let result = cases;
+    
+    if (selectedFilter === 'recent') {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      result = result.filter(c => new Date(c.created_at) >= oneWeekAgo);
+    } else if (selectedFilter === 'favorites') {
+      result = result.filter(c => c.isFavorite);
+    }
+    
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(c => 
+        c.title.toLowerCase().includes(term) ||
+        c.diagnosis?.toLowerCase().includes(term)
+      );
+    }
+    
+    return result;
+  }, [cases, searchTerm, selectedFilter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -291,7 +300,7 @@ const MobileCasesPage: React.FC = () => {
                     <User className="w-3 h-3" />
                     <span>{caseItem.patientName}</span>
                     <Clock className="w-3 h-3" />
-                    <span>{formatDate(caseItem.createdAt)}</span>
+                    <span>{formatDate(caseItem.created_at)}</span>
                   </div>
 
                   <div className="mb-2">
@@ -299,7 +308,7 @@ const MobileCasesPage: React.FC = () => {
                     <span className="text-sm font-medium text-gray-900">{caseItem.diagnosis}</span>
                   </div>
 
-                  {caseItem.symptoms.length > 0 && (
+                  {caseItem.symptoms && caseItem.symptoms.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-3">
                       {caseItem.symptoms.map((symptom, idx) => (
                         <span key={idx} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
@@ -325,7 +334,7 @@ const MobileCasesPage: React.FC = () => {
                       itemData={{
                         title: caseItem.title,
                         description: caseItem.description || caseItem.diagnosis,
-                        date: caseItem.createdAt
+                        date: caseItem.created_at
                       }}
                       initialCollected={caseItem.isFavorite || false}
                       onToggle={(collected) => handleFavoriteToggle(caseItem.id, collected)}
