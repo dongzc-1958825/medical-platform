@@ -12,13 +12,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('   VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '已设置' : '未设置');
 }
 
-// 创建 Supabase 客户端
+// 创建 Supabase 客户端（修复锁冲突问题）
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-    storage: localStorage  // 存储 session 到 localStorage（仅用于 token）
+    persistSession: true,           // 保持会话
+    autoRefreshToken: true,         // 自动刷新 token
+    detectSessionInUrl: true,       // 检测 URL 中的会话
+    storage: localStorage,          // 使用 localStorage 存储 token
+    storageKey: 'medical-platform-auth-token',  // ✅ 使用唯一的 key，避免多项目冲突
+    lock: false                     // ✅ 禁用锁机制，避免多标签页冲突
   }
 });
 
