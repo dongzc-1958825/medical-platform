@@ -40,18 +40,27 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // 辅助函数：从 Supabase 用户获取用户资料
 const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
   try {
+    console.log('🔍 查询用户资料，ID:', supabaseUser.id);
+    
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", supabaseUser.id)
-      .single();
-
+      .maybeSingle();  // 使用 maybeSingle() 而不是 single()
+    
     if (error) {
-      console.error("❌ 获取用户资料失败:", error);
-      return null;
+      console.error('❌ 查询用户资料出错:', error);
+      // 出错时返回基本用户信息
+      return {
+        id: supabaseUser.id,
+        username: supabaseUser.email?.split("@")[0] || "",
+        email: supabaseUser.email || "",
+        role: "patient",
+      };
     }
-
+    
     if (data) {
+      console.log('✅ 找到用户资料:', data);
       return {
         id: supabaseUser.id,
         username: data.username || supabaseUser.email?.split("@")[0] || "",
@@ -66,10 +75,23 @@ const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null
         updatedAt: data.updatedAt || "",
       };
     }
-    return null;
+    
+    // 没有找到资料，返回基本用户信息
+    console.log('⚠️ 没有找到用户资料，使用默认值');
+    return {
+      id: supabaseUser.id,
+      username: supabaseUser.email?.split("@")[0] || "",
+      email: supabaseUser.email || "",
+      role: "patient",
+    };
   } catch (error) {
-    console.error("❌ 获取用户资料异常:", error);
-    return null;
+    console.error('❌ 获取用户资料异常:', error);
+    return {
+      id: supabaseUser.id,
+      username: supabaseUser.email?.split("@")[0] || "",
+      email: supabaseUser.email || "",
+      role: "patient",
+    };
   }
 };
 
