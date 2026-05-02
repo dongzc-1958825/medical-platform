@@ -156,16 +156,19 @@ const CasePublishForm: React.FC<CasePublishFormProps> = ({
         
         if (isEditMode && caseId) {
           // 编辑模式：更新现有医案
-          const existingCase = caseService.getCaseById(caseId);
+          // 🔧 修改1：添加 await
+          const existingCase = await caseService.getCaseById(caseId);
           if (existingCase) {
-            savedCase = caseService.updateCase(caseId, caseData) as MedicalCase;
+            // 🔧 修改2：添加 await，移除 as MedicalCase
+            savedCase = await caseService.updateCase(caseId, caseData);
             alert('医案更新成功！');
           } else {
             throw new Error('未找到要编辑的医案');
           }
         } else {
           // 创建模式：新建医案
-          savedCase = caseService.createCase(caseData);
+          // 🔧 修改3：添加 await
+          savedCase = await caseService.createCase(caseData);
           alert('医案发布成功！');
         }
         
