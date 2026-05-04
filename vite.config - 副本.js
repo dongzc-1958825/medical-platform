@@ -19,29 +19,12 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    // 禁用 tree-shaking，防止删除 supabase 调用
-    rollupOptions: {
-      treeshake: false,
-      output: {
-        manualChunks: {
-          'supabase': ['@supabase/supabase-js']
-        }
-      }
-    },
-    // 使用 esbuild 压缩（Vite 默认，无需额外安装）
-    minify: 'esbuild',
-    chunkSizeWarningLimit: 1000
   },
   server: {
-    host: '0.0.0.0',
+    host: '0.0.0.0',  // ✅ 允许局域网访问（关键！）
     port: 5173,
     open: true,
     strictPort: true,
     cors: true,
-  },
-  // 强制预构建 Supabase
-  optimizeDeps: {
-    include: ['@supabase/supabase-js'],
-    force: true
   }
 })

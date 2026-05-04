@@ -1,18 +1,9 @@
-﻿// src/pages/mobile/MobileCasesPage.tsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Heart, 
-  MessageCircle, 
-  Search,
-  X,
-  User,
-  Clock,
-  Trash2
-} from 'lucide-react';
-import { useAuth } from '../../shared/hooks/useAuth';
-import { supabase } from '../../services/supabaseClient';
-import CollectButton from '../../components/collection/CollectButton';
+﻿import React, { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Heart, MessageCircle, Search, X, User, Clock, Trash2 } from "lucide-react";
+import { useAuth } from "../../shared/hooks/useAuth";
+import { supabase } from "../../services/supabaseClient";
+import CollectButton from "../../components/collection/CollectButton";
 
 interface MedicalCase {
   id: string;
@@ -20,7 +11,6 @@ interface MedicalCase {
   content: string;
   user_id: string;
   created_at: string;
-  // 扩展字段（后续可添加到数据库）
   patientName?: string;
   diagnosis?: string;
   symptoms?: string[];
@@ -28,7 +18,6 @@ interface MedicalCase {
   treatment?: string;
   outcome?: string;
   imageUrls?: string[];
-  // 互动字段（后续可添加到数据库）
   likeCount: number;
   commentCount: number;
   isLiked: boolean;
@@ -39,51 +28,71 @@ const MobileCasesPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [cases, setCases] = useState<MedicalCase[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'recent' | 'favorites'>('all');
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "recent" | "favorites">("all");
   const [showSearch, setShowSearch] = useState(false);
-  
-  // 删除确认弹窗状态
+  const [showPublishForm, setShowPublishForm] = useState(false);
+  const [publishTitle, setPublishTitle] = useState("");
+  const [publishContent, setPublishContent] = useState("");
+
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
-  const [deletingCaseTitle, setDeletingCaseTitle] = useState('');
+  const [deletingCaseTitle, setDeletingCaseTitle] = useState("");
 
-  // 加载医案列表
+  // 加载列表
   const loadCases = async () => {
     try {
       setIsLoading(true);
-      
-      // 从 Supabase 加载数据
-      const { data, error } = await supabase
-        .from('cases')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
+      const { data, error } = await supabase.from("cases").select("*").order("created_at", { ascending: false });
       if (error) throw error;
-      
-      // 转换为组件需要的格式（保留原有字段结构）
-      const enhancedCases: MedicalCase[] = (data || []).map(c => ({
+      const enhanced: MedicalCase[] = (data || []).map((c) => ({
         id: c.id,
         title: c.title,
         content: c.content,
         user_id: c.user_id,
         created_at: c.created_at,
-        // 临时从 content 提取诊断和症状（后续可拆分字段）
-        diagnosis: c.content?.substring(0, 50) || '',
+        diagnosis: c.content?.substring(0, 50) || "",
         symptoms: [],
-        patientName: c.user_id?.slice(0, 8) || '匿名',
+        patientName: c.user_id?.slice(0, 8) || "匿名",
         likeCount: 0,
         commentCount: 0,
         isLiked: false,
-        isFavorite: false
+        isFavorite: false,
       }));
-      
-      setCases(enhancedCases);
-    } catch (error) {
-      console.error('加载医案数据失败:', error);
+      setCases(enhanced);
+    } catch (err) {
+      console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // 发布（核心：直接写 Supabase，永远不会被摇掉）
+  const handlePublish = async () => {
+    if (!publishTitle.trim() || !publishContent.trim()) {
+      alert("请填写标题和内容");
+      return;
+    }
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      alert("请先登录");
+      return;
+    }
+    const { error } = await supabase.from("cases").insert({
+      title: publishTitle.trim(),
+      content: publishContent.trim(),
+      user_id: currentUser.id,
+      created_at: new Date().toISOString(),
+    });
+    if (error) {
+      alert("发布失败：" + error.message);
+    } else {
+      alert("✅ 发布成功");
+      setPublishTitle("");
+      setPublishContent("");
+      setShowPublishForm(false);
+      loadCases();
     }
   };
 
@@ -91,33 +100,23 @@ const MobileCasesPage: React.FC = () => {
     loadCases();
   }, []);
 
-  // 点赞
-  const handleLike = async (id: string) => {
-    // TODO: 后续实现点赞表
-    setCases(prev => prev.map(c => {
-      if (c.id === id) {
-        const newLiked = !c.isLiked;
-        return {
-          ...c,
-          isLiked: newLiked,
-          likeCount: (c.likeCount || 0) + (newLiked ? 1 : -1)
-        };
-      }
-      return c;
-    }));
+  const handleLike = (id: string) => {
+    setCases((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, isLiked: !c.isLiked, likeCount: c.likeCount + (c.isLiked ? -1 : 1) }
+          : c
+      )
+    );
   };
 
-  // 删除
   const handleDeleteClick = (id: string, title: string) => {
-    // 只有作者或管理员可以删除
-    const isAuthor = user?.id === cases.find(c => c.id === id)?.user_id;
-    const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
-    
+    const isAuthor = user?.id === cases.find((c) => c.id === id)?.user_id;
+    const isAdmin = user?.role === "super_admin" || user?.role === "admin";
     if (!isAuthor && !isAdmin) {
-      alert('您没有权限删除此医案');
+      alert("您没有权限删除此医案");
       return;
     }
-    
     setDeletingCaseId(id);
     setDeletingCaseTitle(title);
     setShowDeleteConfirm(true);
@@ -125,221 +124,108 @@ const MobileCasesPage: React.FC = () => {
 
   const handleConfirmDelete = async () => {
     if (deletingCaseId) {
-      try {
-        const { error } = await supabase
-          .from('cases')
-          .delete()
-          .eq('id', deletingCaseId);
-        
-        if (error) throw error;
-        
-        // 刷新列表
-        await loadCases();
-      } catch (error) {
-        console.error('删除失败:', error);
-        alert('删除失败，请重试');
-      }
+      await supabase.from("cases").delete().eq("id", deletingCaseId);
+      await loadCases();
     }
     setShowDeleteConfirm(false);
     setDeletingCaseId(null);
-    setDeletingCaseTitle('');
+    setDeletingCaseTitle("");
   };
 
-  // 收藏
   const handleFavoriteToggle = (id: string, collected: boolean) => {
-    setCases(prev => prev.map(c => 
-      c.id === id ? { ...c, isFavorite: collected } : c
-    ));
-    // TODO: 后续同步到 Supabase 收藏表
+    setCases((prev) => prev.map((c) => (c.id === id ? { ...c, isFavorite: collected } : c)));
   };
 
-  // 筛选逻辑
   const filteredCases = useMemo(() => {
     let result = cases;
-    
-    if (selectedFilter === 'recent') {
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      result = result.filter(c => new Date(c.created_at) >= oneWeekAgo);
-    } else if (selectedFilter === 'favorites') {
-      result = result.filter(c => c.isFavorite);
+    if (selectedFilter === "recent") {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      result = result.filter((c) => new Date(c.created_at) >= weekAgo);
+    } else if (selectedFilter === "favorites") {
+      result = result.filter((c) => c.isFavorite);
     }
-    
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(c => 
-        c.title.toLowerCase().includes(term) ||
-        c.diagnosis?.toLowerCase().includes(term)
-      );
+      result = result.filter((c) => c.title.toLowerCase().includes(term) || c.diagnosis?.toLowerCase().includes(term));
     }
-    
     return result;
   }, [cases, searchTerm, selectedFilter]);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
-    const diffDays = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays === 0) return '今天';
-    if (diffDays === 1) return '昨天';
-    if (diffDays <= 7) return `${diffDays}天前`;
-    return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+    const diff = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff === 0) return "今天";
+    if (diff === 1) return "昨天";
+    if (diff <= 7) return `${diff}天前`;
+    return date.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <h1 className="text-xl font-bold text-gray-900">医案分享</h1>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setShowSearch(!showSearch)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <Search className="w-5 h-5 text-gray-600" />
-            </button>
-            <button
-              onClick={() => navigate('/mobile/cases/create')}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-            >
-              发布
-            </button>
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="flex justify-between items-center px-4 py-3">
+          <h1 className="text-xl font-bold">医案分享</h1>
+          <div className="flex gap-3">
+            <button onClick={() => setShowSearch(!showSearch)}><Search className="w-5 h-5" /></button>
+            <button onClick={() => setShowPublishForm(true)} className="bg-blue-600 text-white px-4 py-2 rounded-lg">发布</button>
           </div>
         </div>
-
         {showSearch && (
           <div className="px-4 pb-3">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="搜索医案..."
-                className="w-full pl-10 pr-10 py-2 bg-gray-100 border-0 rounded-lg text-sm"
-                autoFocus
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              {searchTerm && (
-                <button onClick={() => setSearchTerm('')} className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <X className="w-4 h-4 text-gray-400" />
-                </button>
-              )}
-            </div>
+            <input
+              className="w-full p-2 bg-gray-100 rounded-lg"
+              placeholder="搜索"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         )}
-
-        {/* 筛选标签 */}
-        <div className="px-4 pb-3 flex space-x-2">
-          <button
-            onClick={() => setSelectedFilter('all')}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-              selectedFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            全部
-          </button>
-          <button
-            onClick={() => setSelectedFilter('recent')}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-              selectedFilter === 'recent' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            最近一周
-          </button>
-          <button
-            onClick={() => setSelectedFilter('favorites')}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium ${
-              selectedFilter === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'
-            }`}
-          >
-            我的收藏
-          </button>
+        <div className="flex px-4 pb-3 gap-2">
+          {["all", "recent", "favorites"].map((f) => (
+            <button
+              key={f}
+              onClick={() => setSelectedFilter(f as any)}
+              className={`px-4 py-1 rounded-full ${selectedFilter === f ? "bg-blue-600 text-white" : "bg-gray-100"}`}
+            >
+              {f === "all" ? "全部" : f === "recent" ? "最近一周" : "我的收藏"}
+            </button>
+          ))}
         </div>
-
-        <div className="px-4 pb-3">
-          <span className="text-sm text-gray-500">共 {filteredCases.length} 个医案</span>
-        </div>
+        <div className="px-4 pb-2 text-sm text-gray-500">共 {filteredCases.length} 个医案</div>
       </div>
 
-      {/* 医案列表 */}
       <div className="p-4">
         {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
+          <div className="flex justify-center py-8"><div className="animate-spin w-8 h-8 border-b-2 border-blue-600 rounded-full" /></div>
         ) : filteredCases.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Heart className="w-8 h-8 text-gray-400" />
-            </div>
-            <p className="text-gray-500">暂无医案</p>
-          </div>
+          <div className="text-center py-12 text-gray-500">暂无医案</div>
         ) : (
           <div className="space-y-4">
-            {filteredCases.map((caseItem) => (
-              <div key={caseItem.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 
-                      onClick={() => navigate(`/mobile/cases/${caseItem.id}`)}
-                      className="text-lg font-semibold text-gray-900 hover:text-blue-600 cursor-pointer"
-                    >
-                      {caseItem.title}
-                    </h3>
-                    <button
-                      onClick={() => handleDeleteClick(caseItem.id, caseItem.title)}
-                      className="p-1 hover:bg-red-50 rounded-lg transition-colors"
-                      title="删除"
-                    >
-                      <Trash2 className="w-4 h-4 text-gray-400 hover:text-red-500" />
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                    <User className="w-3 h-3" />
-                    <span>{caseItem.patientName}</span>
-                    <Clock className="w-3 h-3" />
-                    <span>{formatDate(caseItem.created_at)}</span>
-                  </div>
-
-                  <div className="mb-2">
-                    <span className="text-xs text-gray-500">诊断：</span>
-                    <span className="text-sm font-medium text-gray-900">{caseItem.diagnosis}</span>
-                  </div>
-
-                  {caseItem.symptoms && caseItem.symptoms.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {caseItem.symptoms.map((symptom, idx) => (
-                        <span key={idx} className="px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
-                          {symptom}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <button
-                      onClick={() => handleLike(caseItem.id)}
-                      className="flex items-center gap-1"
-                    >
-                      <Heart
-                        className={`w-4 h-4 ${caseItem.isLiked ? 'fill-red-500 text-red-500' : 'text-gray-400'}`}
-                      />
-                      <span className="text-xs text-gray-600">{caseItem.likeCount || 0}</span>
-                    </button>
-                    <CollectButton
-                      itemId={caseItem.id}
-                      itemType="case"
-                      itemData={{
-                        title: caseItem.title,
-                        description: caseItem.description || caseItem.diagnosis,
-                        date: caseItem.created_at
-                      }}
-                      initialCollected={caseItem.isFavorite || false}
-                      onToggle={(collected) => handleFavoriteToggle(caseItem.id, collected)}
-                    />
-                  </div>
+            {filteredCases.map((item) => (
+              <div key={item.id} className="bg-white rounded-xl border p-4">
+                <div className="flex justify-between">
+                  <h3 className="text-lg font-semibold cursor-pointer" onClick={() => navigate(`/mobile/cases/${item.id}`)}>{item.title}</h3>
+                  <button onClick={() => handleDeleteClick(item.id, item.title)}><Trash2 className="w-4 h-4 text-gray-400" /></button>
+                </div>
+                <div className="flex gap-2 text-xs text-gray-500 mt-1">
+                  <User className="w-3 h-3" /><span>{item.patientName}</span>
+                  <Clock className="w-3 h-3" /><span>{formatDate(item.created_at)}</span>
+                </div>
+                <div className="mt-2 text-sm text-gray-700 line-clamp-3">{item.content}</div>
+                <div className="flex justify-between items-center mt-3 pt-2 border-t">
+                  <button onClick={() => handleLike(item.id)} className="flex items-center gap-1">
+                    <Heart className={`w-4 h-4 ${item.isLiked ? "fill-red-500 text-red-500" : "text-gray-400"}`} />
+                    <span>{item.likeCount}</span>
+                  </button>
+                  <CollectButton
+                    itemId={item.id}
+                    itemType="case"
+                    itemData={{ title: item.title, date: item.created_at }}
+                    initialCollected={item.isFavorite}
+                    onToggle={(collected) => handleFavoriteToggle(item.id, collected)}
+                  />
                 </div>
               </div>
             ))}
@@ -347,27 +233,27 @@ const MobileCasesPage: React.FC = () => {
         )}
       </div>
 
-      {/* 删除确认弹窗 */}
+      {showPublishForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">发布新医案</h2>
+            <input className="w-full border p-2 rounded mb-3" placeholder="标题" value={publishTitle} onChange={(e) => setPublishTitle(e.target.value)} />
+            <textarea className="w-full border p-2 rounded mb-3" rows={4} placeholder="内容" value={publishContent} onChange={(e) => setPublishContent(e.target.value)} />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowPublishForm(false)} className="px-4 py-2 bg-gray-200 rounded">取消</button>
+              <button onClick={handlePublish} className="px-4 py-2 bg-blue-600 text-white rounded">确认发布</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6">
-            <h3 className="text-lg font-bold mb-2">确认删除</h3>
-            <p className="text-gray-600 mb-6">
-              确定要删除医案「{deletingCaseTitle}」吗？删除后无法恢复。
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-              >
-                取消
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                确认删除
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white rounded-xl p-6 max-w-sm w-full">
+            <p>确定删除「{deletingCaseTitle}」吗？</p>
+            <div className="flex justify-end gap-2 mt-4">
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1 bg-gray-200 rounded">取消</button>
+              <button onClick={handleConfirmDelete} className="px-3 py-1 bg-red-600 text-white rounded">删除</button>
             </div>
           </div>
         </div>

@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../shared/hooks/useAuth';
-import { supabase } from '../../services/supabaseClient';
 import { ChevronLeft, X, Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface CaseFormData {
@@ -189,51 +188,46 @@ const CreateCasePage: React.FC = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // ✅ 核心修改：使用 Supabase 写入
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      // 获取当前登录用户
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser) {
-        alert('请先登录');
-        setIsSubmitting(false);
-        return;
-      }
+      // 确保每个文件都有 url 数据
+      const filesWithData = uploadedFiles
+        .filter(f => f.url)  // 只保存有数据的文件
+        .map(f => ({
+          name: f.name,
+          type: f.type,
+          size: f.size,
+          url: f.url
+        }));
 
-      // 准备要插入的数据（匹配 Supabase cases 表字段）
+      console.log('📤 准备保存的文件数据:', filesWithData);
+
       const caseData = {
-        title: formData.title.trim(),
-        content: formData.description.trim() || formData.diagnosis.trim(),
-        user_id: currentUser.id,
-        diagnosis: formData.diagnosis.trim(),
-        treatment: formData.treatment.trim(),
-        outcome: formData.outcome.trim(),
-        patient_name: formData.patientName.trim(),
-        symptoms: formData.symptoms,
-        tags: formData.tags,
-        image_urls: formData.imageUrls,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        id: Date.now().toString(),
+        ...formData,
+        createdAt: new Date().toISOString(),
+        authorId: user?.id,
+        author: user?.username || '用户',
+        likeCount: 0,
+        commentCount: 0,
+        isFavorite: false,
+        uploadedFiles: filesWithData
       };
 
-      console.log('📤 准备发布到 Supabase:', caseData);
+      // 保存到 localStorage
+      const savedCases = localStorage.getItem('medical_cases');
+      const cases = savedCases ? JSON.parse(savedCases) : [];
+      cases.unshift(caseData);
+      localStorage.setItem('medical_cases', JSON.stringify(cases));
 
-      // 写入 Supabase
-      const { error } = await supabase.from('cases').insert(caseData);
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      console.log('✅ 发布成功，跳转到医案列表');
-      alert('发布成功！');
+      console.log('✅ 保存成功，跳转到医案列表');
       navigate('/mobile/cases');
-    } catch (error: any) {
+    } catch (error) {
       console.error('发布失败:', error);
-      alert('发布失败：' + error.message);
+      alert('发布失败，请重试');
     } finally {
       setIsSubmitting(false);
     }
