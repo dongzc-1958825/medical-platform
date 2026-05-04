@@ -1,4 +1,6 @@
-﻿import React, { useState, useEffect, useMemo } from "react";
+﻿// 第一行
+console.log('🔥🔥🔥 正在使用 MobileCasesPage 最新版本 🔥🔥🔥');
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Heart, MessageCircle, Search, X, User, Clock, Trash2 } from "lucide-react";
 import { useAuth } from "../../shared/hooks/useAuth";
