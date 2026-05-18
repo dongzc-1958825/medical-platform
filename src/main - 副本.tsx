@@ -1,9 +1,9 @@
-﻿import React from "react"
+﻿console.log("🔧 开始加载应用...")
+
+import React from "react"
 import ReactDOM from "react-dom/client"
 import App from "./App.tsx"
 import "./index.css"
-
-console.log("🔧 开始加载应用...")
 
 const rootElement = document.getElementById("root")
 if (!rootElement) {

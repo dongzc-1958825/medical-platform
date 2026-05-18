@@ -21,11 +21,7 @@ export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string; user?: User }>;
-<<<<<<< HEAD
-  logout: () => void;
-=======
   logout: () => Promise<void>;
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
   register: (userData: {
     username: string;
     idCard?: string;
@@ -41,34 +37,21 @@ export interface AuthContextType {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-<<<<<<< HEAD
-// 导入 Supabase 认证服务
-import { signIn as supabaseSignIn, signUp as supabaseSignUp, signOut as supabaseSignOut, getCurrentUser, isSuperAdmin } from "../shared/services/supabaseAuthService";
-=======
 // 辅助函数：从 Supabase 用户获取用户资料
 const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null> => {
   try {
-    console.log('🔍 查询用户资料，ID:', supabaseUser.id);
-    
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", supabaseUser.id)
-      .maybeSingle();  // 使用 maybeSingle() 而不是 single()
-    
+      .single();
+
     if (error) {
-      console.error('❌ 查询用户资料出错:', error);
-      // 出错时返回基本用户信息
-      return {
-        id: supabaseUser.id,
-        username: supabaseUser.email?.split("@")[0] || "",
-        email: supabaseUser.email || "",
-        role: "patient",
-      };
+      console.error("❌ 获取用户资料失败:", error);
+      return null;
     }
-    
+
     if (data) {
-      console.log('✅ 找到用户资料:', data);
       return {
         id: supabaseUser.id,
         username: data.username || supabaseUser.email?.split("@")[0] || "",
@@ -83,23 +66,10 @@ const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null
         updatedAt: data.updatedAt || "",
       };
     }
-    
-    // 没有找到资料，返回基本用户信息
-    console.log('⚠️ 没有找到用户资料，使用默认值');
-    return {
-      id: supabaseUser.id,
-      username: supabaseUser.email?.split("@")[0] || "",
-      email: supabaseUser.email || "",
-      role: "patient",
-    };
+    return null;
   } catch (error) {
-    console.error('❌ 获取用户资料异常:', error);
-    return {
-      id: supabaseUser.id,
-      username: supabaseUser.email?.split("@")[0] || "",
-      email: supabaseUser.email || "",
-      role: "patient",
-    };
+    console.error("❌ 获取用户资料异常:", error);
+    return null;
   }
 };
 
@@ -129,32 +99,11 @@ const upsertProfile = async (user: SupabaseUser, userData: Partial<User>) => {
 
   return profile;
 };
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-<<<<<<< HEAD
-  // 初始化：从 Supabase 加载当前登录用户
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        console.log("🔄 AuthContext - 初始化，尝试恢复登录状态");
-        
-        const currentUser = await getCurrentUser();
-        
-        if (currentUser) {
-          console.log("✅ 恢复当前用户:", currentUser.username);
-          setUser(currentUser);
-        } else {
-          console.log("ℹ️ 没有保存的登录状态");
-        }
-      } catch (error) {
-        console.error("❌ 加载用户信息失败:", error);
-      } finally {
-        setIsLoading(false);
-=======
   // 初始化：检查 Supabase 登录状态
   useEffect(() => {
     const initAuth = async () => {
@@ -174,7 +123,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
       } else {
         console.log("ℹ️ 没有保存的登录会话");
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
       }
       
       setIsLoading(false);
@@ -204,24 +152,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
-<<<<<<< HEAD
-  const login = async (email: string, password: string) => {
-    try {
-      console.log("🔐 === LOGIN START ===");
-      console.log("👤 登录邮箱:", email);
-      console.log("🔑 登录密码:", password);
-
-      const result = await supabaseSignIn(email, password);
-      
-      if (result.success && result.user) {
-        setUser(result.user);
-        console.log("✅ 登录成功，用户:", result.user.username);
-        return { success: true, user: result.user };
-      } else {
-        console.log("❌ 登录失败:", result.error);
-        return { success: false, message: result.error || "登录失败" };
-      }
-=======
   // 登录
   const login = async (email: string, password: string) => {
     try {
@@ -259,29 +189,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       return { success: false, message: "登录失败" };
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
     } catch (error) {
       console.error("❌ 登录异常:", error);
       return { success: false, message: "登录失败，请重试" };
     }
   };
 
-<<<<<<< HEAD
-=======
   // 登出
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
   const logout = async () => {
     console.log("🚪 === LOGOUT START ===");
     console.log("👤 退出用户:", user?.username);
     
-<<<<<<< HEAD
-    await supabaseSignOut();
-    setUser(null);
-    
-    console.log("✅ 当前登录状态已清理");
-    // 跳转到登录页
-    window.location.hash = '#/login';
-=======
     const { error } = await supabase.auth.signOut();
     
     if (error) {
@@ -290,7 +208,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log("✅ 登出成功");
       setUser(null);
     }
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
   };
 
   // 注册
@@ -309,22 +226,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       console.log("📧 注册邮箱:", userData.email);
       console.log("👤 注册姓名:", userData.username);
 
-<<<<<<< HEAD
-      const result = await supabaseSignUp(userData.email, userData.password, userData.username);
-      
-      if (result.success && result.user) {
-        // 注册成功后自动登录
-        const loginResult = await supabaseSignIn(userData.email, userData.password);
-        if (loginResult.success && loginResult.user) {
-          setUser(loginResult.user);
-        }
-        console.log("🎉 注册成功！");
-        return { success: true };
-      } else {
-        console.log("❌ 注册失败:", result.error);
-        return { success: false, message: result.error || "注册失败，请重试" };
-      }
-=======
       // 检查邮箱是否已存在
       const { data: existingUsers, error: checkError } = await supabase
         .from("profiles")
@@ -374,24 +275,12 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
 
       return { success: false, message: "注册失败" };
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
     } catch (error) {
       console.error("❌ 注册异常:", error);
       return { success: false, message: "注册失败，请重试" };
     }
   };
 
-<<<<<<< HEAD
-  const updateProfile = async (userData: Partial<User>) => {
-    if (!user) return;
-    
-    // TODO: 实现更新 Supabase 用户资料
-    // 目前先更新本地状态
-    const updatedUser = { ...user, ...userData, updatedAt: new Date().toISOString() };
-    setUser(updatedUser);
-    
-    console.log("📝 更新用户资料:", updatedUser);
-=======
   // 更新个人资料
   const updateProfile = async (userData: Partial<User>) => {
     if (!user) {
@@ -439,7 +328,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error("❌ 更新资料异常:", error);
     }
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
   };
 
   const value: AuthContextType = {

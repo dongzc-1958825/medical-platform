@@ -1,7 +1,7 @@
 // src/pages/LoginPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { supabase } from '@/services/supabaseClient';
+import { useAuth } from '@/shared/hooks/useAuth';
 import { isMobileDevice } from '@/shared/utils/device';
 import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
 
@@ -16,10 +16,17 @@ const LoginPage = () => {
   const [remark, setRemark] = useState('');
   const [idCardError, setIdCardError] = useState('');
   const [idCardCorrected, setIdCardCorrected] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    special: false
+  });
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
+  const { login, register } = useAuth();
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -31,6 +38,15 @@ const LoginPage = () => {
     }
     setIsRegister(formType === 'register');
   }, [location]);
+
+  useEffect(() => {
+    setPasswordStrength({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[!@#$%^&*]/.test(password)
+    });
+  }, [password]);
 
   const handleIdCardChange = (value: string) => {
     const cleaned = value.toUpperCase().replace(/[^0-9X]/g, '');
@@ -69,14 +85,13 @@ const LoginPage = () => {
     return /^1[3-9]\d{9}$/.test(phoneNum);
   };
 
-  // ✅ 修改：使用 Supabase Auth 登录
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setMessage('');
 
     if (!username.trim()) {
-      setError('请输入邮箱');
+      setError('请输入姓名或邮箱');
       return;
     }
     if (!password.trim()) {
@@ -85,24 +100,21 @@ const LoginPage = () => {
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: username.trim(),
-        password: password.trim(),
-      });
-
-      if (error) throw error;
-
-      setMessage(`欢迎回来，${data.user?.email || '用户'}！`);
-      setTimeout(() => {
-        const redirectPath = isMobileDevice() ? '/mobile/home' : '/desktop/home';
-        navigate(redirectPath);
-      }, 1000);
-    } catch (err: any) {
-      setError(err.message || '登录失败，请检查邮箱或密码');
+      const result = await login(username, password);
+      if (result.success) {
+        setMessage(`欢迎回来，${result.user?.username || '用户'}！`);
+        setTimeout(() => {
+          const redirectPath = isMobileDevice() ? '/mobile/home' : '/desktop/home';
+          navigate(redirectPath);
+        }, 1000);
+      } else {
+        setError(result.message || '姓名/邮箱或密码错误');
+      }
+    } catch (err) {
+      setError('登录失败，请重试');
     }
   };
 
-  // ✅ 修改：使用 Supabase Auth 注册
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -147,44 +159,27 @@ const LoginPage = () => {
     }
 
     try {
-      // 1. 用 Supabase Auth 注册
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email,
-        password: password,
+      const finalIdCard = idCardCorrected || idCard;
+      const result = await register({
+        username,
+        idCard: finalIdCard,
+        email,
+        phone,
+        password,
+        remark,
+        role: 'patient'
       });
-
-      if (signUpError) throw signUpError;
-
-      // 2. 注册成功后的额外信息（可选，存储到 profiles 表）
-      if (data.user) {
-        // 可以在这里把其他信息（姓名、身份证等）存到 profiles 表
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: data.user.id,
-            username: username.trim(),
-            id_card: idCardCorrected || idCard,
-            phone: phone,
-            remark: remark,
-            role: 'patient',
-            created_at: new Date().toISOString(),
-          });
-
-        if (profileError) {
-          console.warn('保存用户信息失败:', profileError);
-        }
+      if (result.success) {
+        setMessage('🎉 注册成功！正在进入系统...');
+        setTimeout(() => {
+          const redirectPath = isMobileDevice() ? '/mobile/home' : '/desktop/home';
+          navigate(redirectPath);
+        }, 1500);
+      } else {
+        setError(result.message || '注册失败，请重试');
       }
-
-      setMessage('🎉 注册成功！请登录...');
-      // 注册成功后切换到登录表单
-      setTimeout(() => {
-        setIsRegister(false);
-        setMessage('');
-        setEmail('');
-        setPassword('');
-      }, 2000);
-    } catch (err: any) {
-      setError(err.message || '注册失败，请重试');
+    } catch (err) {
+      setError('注册失败，请重试');
     }
   };
 
@@ -205,7 +200,7 @@ const LoginPage = () => {
             {isRegister ? '实名注册' : '欢迎回来'}
           </h1>
           <p className="text-gray-600">
-            {isRegister ? '填写真实信息以完成注册' : '使用您的邮箱登录'}
+            {isRegister ? '填写真实信息以完成注册' : '使用您的姓名或邮箱登录'}
           </p>
         </div>
 
@@ -307,6 +302,20 @@ const LoginPage = () => {
                 placeholder="设置密码"
                 required
               />
+              <div className="mt-2 space-y-1 bg-gray-50 p-3 rounded-lg">
+                <p className={`text-xs flex items-center ${passwordStrength.length ? 'text-green-500' : 'text-gray-400'}`}>
+                  <span className="mr-2">{passwordStrength.length ? '✓' : '○'}</span>至少8位字符
+                </p>
+                <p className={`text-xs flex items-center ${passwordStrength.uppercase ? 'text-green-500' : 'text-gray-400'}`}>
+                  <span className="mr-2">{passwordStrength.uppercase ? '✓' : '○'}</span>至少1个大写字母
+                </p>
+                <p className={`text-xs flex items-center ${passwordStrength.number ? 'text-green-500' : 'text-gray-400'}`}>
+                  <span className="mr-2">{passwordStrength.number ? '✓' : '○'}</span>至少1个数字
+                </p>
+                <p className={`text-xs flex items-center ${passwordStrength.special ? 'text-green-500' : 'text-gray-400'}`}>
+                  <span className="mr-2">{passwordStrength.special ? '✓' : '○'}</span>至少1个特殊字符 (!@#$%^&*)
+                </p>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">确认密码 *</label>
@@ -341,13 +350,13 @@ const LoginPage = () => {
         ) : (
           <form onSubmit={handleLogin} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">邮箱</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">姓名 / 邮箱</label>
               <input
-                type="email"
+                type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入您的邮箱"
+                placeholder="请输入您的姓名或邮箱"
                 required
               />
             </div>

@@ -1,190 +1,204 @@
 // src/shared/services/caseService.ts
 import { MedicalCase, CaseComment, CaseFilter } from '../types/case';
-
-// ✅ 确保使用与 MobileCasesPage.tsx 相同的键名
-const STORAGE_KEY = 'medical_cases';  // 使用下划线
-const COMMENTS_KEY = 'case_comments';
+import { supabase } from '../../services/supabaseClient';
 
 class CaseService {
   // 获取所有医案
-  getCases(filter?: CaseFilter): MedicalCase[] {
-    const cases = this.getAllCases();
-    let filtered = [...cases];
-    
-    // 按时间倒序排序
-    filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    if (filter) {
-      if (filter.keyword) {
-        const keyword = filter.keyword.toLowerCase();
-        filtered = filtered.filter(c => 
-          c.title.toLowerCase().includes(keyword) ||
-          c.diagnosis.toLowerCase().includes(keyword) ||
-          c.description?.toLowerCase().includes(keyword)
-        );
+  async getCases(filter?: CaseFilter): Promise<MedicalCase[]> {
+    try {
+      let query = supabase
+        .from('cases')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      
+      let cases = (data || []).map(this.convertToMedicalCase);
+      
+      // 前端筛选（因为 Supabase 返回的是标准格式）
+      if (filter) {
+        if (filter.keyword) {
+          const keyword = filter.keyword.toLowerCase();
+          cases = cases.filter(c => 
+            c.title.toLowerCase().includes(keyword) ||
+            c.diagnosis.toLowerCase().includes(keyword) ||
+            c.description?.toLowerCase().includes(keyword)
+          );
+        }
+        if (filter.tags && filter.tags.length > 0) {
+          cases = cases.filter(c => 
+            filter.tags!.some(tag => c.tags.includes(tag))
+          );
+        }
       }
-      if (filter.tags && filter.tags.length > 0) {
-        filtered = filtered.filter(c => 
-          filter.tags!.some(tag => c.tags.includes(tag))
-        );
-      }
+      
+      return cases;
+    } catch (error) {
+      console.error('加载医案失败:', error);
+      return [];
     }
-    
-    return filtered;
   }
 
   // 获取单个医案
-  getCaseById(id: string): MedicalCase | null {
-    const cases = this.getAllCases();
-    return cases.find(c => c.id === id) || null;
+  async getCaseById(id: string): Promise<MedicalCase | null> {
+    try {
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      return data ? this.convertToMedicalCase(data) : null;
+    } catch (error) {
+      console.error('获取医案详情失败:', error);
+      return null;
+    }
   }
 
   // 创建医案
-  createCase(caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite'>): MedicalCase {
-    const cases = this.getAllCases();
-    const newCase: MedicalCase = {
-      ...caseData,
-      id: this.generateId(),
-      createdAt: new Date().toISOString().split('T')[0],
+  async createCase(caseData: Omit<MedicalCase, 'id' | 'createdAt' | 'isFavorite' | 'likeCount' | 'commentCount' | 'views'>): Promise<MedicalCase> {
+    try {
+      const { data, error } = await supabase
+        .from('cases')
+        .insert({
+          title: caseData.title,
+          content: caseData.description || caseData.diagnosis,
+          user_id: this.getCurrentUserId(),
+          diagnosis: caseData.diagnosis,
+          treatment: caseData.treatment,
+          outcome: caseData.outcome,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return this.convertToMedicalCase(data);
+    } catch (error) {
+      console.error('创建医案失败:', error);
+      throw error;
+    }
+  }
+
+  // 更新医案
+  async updateCase(id: string, updates: Partial<MedicalCase>): Promise<MedicalCase | null> {
+    try {
+      const updateData: any = {};
+      if (updates.title) updateData.title = updates.title;
+      if (updates.description) updateData.content = updates.description;
+      if (updates.diagnosis) updateData.diagnosis = updates.diagnosis;
+      if (updates.treatment) updateData.treatment = updates.treatment;
+      if (updates.outcome) updateData.outcome = updates.outcome;
+      updateData.updated_at = new Date().toISOString();
+      
+      const { data, error } = await supabase
+        .from('cases')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data ? this.convertToMedicalCase(data) : null;
+    } catch (error) {
+      console.error('更新医案失败:', error);
+      return null;
+    }
+  }
+
+  // 删除医案
+  async deleteCase(id: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('cases')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('删除医案失败:', error);
+      return false;
+    }
+  }
+
+  // 点赞/取消点赞（后续实现点赞表）
+  async toggleLike(id: string): Promise<MedicalCase | null> {
+    // TODO: 实现独立的点赞表
+    console.log('点赞功能待实现');
+    return this.getCaseById(id);
+  }
+
+  // 收藏/取消收藏（后续实现收藏表）
+  async toggleFavorite(id: string): Promise<MedicalCase | null> {
+    // TODO: 实现独立的收藏表
+    console.log('收藏功能待实现');
+    return this.getCaseById(id);
+  }
+
+  // 增加浏览次数
+  async incrementViews(id: string): Promise<void> {
+    try {
+      const case_ = await this.getCaseById(id);
+      if (case_) {
+        const views = (case_.views || 0) + 1;
+        await supabase
+          .from('cases')
+          .update({ views })
+          .eq('id', id);
+      }
+    } catch (error) {
+      console.error('更新浏览量失败:', error);
+    }
+  }
+
+  // 获取评论（后续实现）
+  async getComments(caseId: string): Promise<CaseComment[]> {
+    return [];
+  }
+
+  // 添加评论（后续实现）
+  async addComment(comment: any): Promise<CaseComment> {
+    throw new Error('评论功能待实现');
+  }
+
+  // 删除评论（后续实现）
+  async deleteComment(id: string, caseId: string): Promise<boolean> {
+    return false;
+  }
+
+  // 私有方法：转换 Supabase 数据格式
+  private convertToMedicalCase(data: any): MedicalCase {
+    return {
+      id: data.id,
+      title: data.title,
+      patientName: data.user_id?.slice(0, 8) || '匿名',
+      description: data.content || '',
+      symptoms: [],
+      diagnosis: data.diagnosis || '',
+      treatment: data.treatment || '',
+      outcome: data.outcome || '',
+      tags: [],
+      imageUrls: [],
+      createdAt: data.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       isFavorite: false,
       likeCount: 0,
       commentCount: 0,
       views: 0
     };
-    
-    cases.push(newCase);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-    return newCase;
   }
 
-  // 更新医案
-  updateCase(id: string, updates: Partial<MedicalCase>): MedicalCase | null {
-    const cases = this.getAllCases();
-    const index = cases.findIndex(c => c.id === id);
-    if (index === -1) return null;
-    
-    cases[index] = { ...cases[index], ...updates };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-    return cases[index];
-  }
-
-  // 删除医案
-  deleteCase(id: string): boolean {
-    const cases = this.getAllCases();
-    const filtered = cases.filter(c => c.id !== id);
-    if (filtered.length === cases.length) return false;
-    
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    // 同时删除相关评论
-    this.deleteCommentsByCaseId(id);
-    return true;
-  }
-
-  // 点赞/取消点赞
-  toggleLike(id: string): MedicalCase | null {
-    const cases = this.getAllCases();
-    const index = cases.findIndex(c => c.id === id);
-    if (index === -1) return null;
-    
-    cases[index].likeCount = (cases[index].likeCount || 0) + 1;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-    return cases[index];
-  }
-
-  // 收藏/取消收藏
-  toggleFavorite(id: string): MedicalCase | null {
-    const cases = this.getAllCases();
-    const index = cases.findIndex(c => c.id === id);
-    if (index === -1) return null;
-    
-    cases[index].isFavorite = !cases[index].isFavorite;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-    return cases[index];
-  }
-
-  // 增加浏览次数
-  incrementViews(id: string): void {
-    const cases = this.getAllCases();
-    const index = cases.findIndex(c => c.id === id);
-    if (index === -1) return;
-    
-    cases[index].views = (cases[index].views || 0) + 1;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(cases));
-  }
-
-  // 获取评论
-  getComments(caseId: string): CaseComment[] {
-    const comments = this.getAllComments();
-    return comments
-      .filter(c => c.caseId === caseId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-
-  // 添加评论
-  addComment(comment: Omit<CaseComment, 'id' | 'createdAt'>): CaseComment {
-    const comments = this.getAllComments();
-    const newComment: CaseComment = {
-      ...comment,
-      id: this.generateId(),
-      createdAt: new Date().toISOString(),
-      likes: 0
-    };
-    
-    comments.push(newComment);
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
-    
-    // 更新医案的评论数
-    const case_ = this.getCaseById(comment.caseId);
-    if (case_) {
-      this.updateCase(comment.caseId, { 
-        commentCount: (case_.commentCount || 0) + 1 
-      });
+  // 私有方法：获取当前用户 ID
+  private getCurrentUserId(): string | null {
+    // 从 localStorage 获取当前用户
+    const userStr = localStorage.getItem('current-user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      return user.id;
     }
-    
-    return newComment;
-  }
-
-  // 删除评论
-  deleteComment(id: string, caseId: string): boolean {
-    const comments = this.getAllComments();
-    const filtered = comments.filter(c => c.id !== id);
-    if (filtered.length === comments.length) return false;
-    
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify(filtered));
-    
-    // 更新医案的评论数
-    const case_ = this.getCaseById(caseId);
-    if (case_) {
-      this.updateCase(caseId, { 
-        commentCount: Math.max(0, (case_.commentCount || 0) - 1)
-      });
-    }
-    
-    return true;
-  }
-
-  // 私有方法：获取所有医案
-  private getAllCases(): MedicalCase[] {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : [];
-  }
-
-  // 私有方法：获取所有评论
-  private getAllComments(): CaseComment[] {
-    const stored = localStorage.getItem(COMMENTS_KEY);
-    return stored ? JSON.parse(stored) : [];
-  }
-
-  // 私有方法：删除医案相关评论
-  private deleteCommentsByCaseId(caseId: string): void {
-    const comments = this.getAllComments();
-    const filtered = comments.filter(c => c.caseId !== caseId);
-    localStorage.setItem(COMMENTS_KEY, JSON.stringify(filtered));
-  }
-
-  // 私有方法：生成ID
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    return null;
   }
 }
 
