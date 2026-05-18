@@ -8,11 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
-    "@supabase/supabase-js": "^2.104.1",
-=======
     "@supabase/supabase-js": "^2.105.1",
->>>>>>> 35456e20860aff740562d54dc01170b0e5b1b83f
     "axios": "^1.6.2",
     "dayjs": "^1.11.10",
     "lodash": "^4.17.21",
