@@ -1,190 +1,18 @@
-/**
- * 咨询服务 - 管理咨询和回复
- */
+// src/shared/services/consultService.ts
 
-// ========== 新增类型定义 ==========
-
-// 患者基本信息
-export interface PatientBasicInfo {
-  name?: string;           // 姓名（脱敏）
-  age?: number;            // 年龄
-  gender?: 'male' | 'female'; // 性别
-  height?: number;         // 身高(cm)
-  weight?: number;         // 体重(kg)
-  location?: string;       // 居住地
-  occupation?: string;     // 职业
-  workEnvironment?: string; // 工作环境
-}
-
-// 症状详细描述
-export interface SymptomDetail {
-  name: string;            // 症状名称
-  location?: string;       // 部位
-  characteristic?: string[]; // 性质
-  timing?: string;         // 发作时间
-  frequency?: string;      // 频率
-  duration?: string;       // 持续时间
-  aggravating?: string[];  // 加重因素
-  relieving?: string[];    // 缓解因素
-  severity?: 1|2|3|4|5;    // 严重程度
-  description?: string;    // 详细描述
-}
-
-// 过敏史
-export interface Allergies {
-  drug?: string[];         // 药物过敏
-  food?: string[];         // 食物过敏
-  other?: string[];        // 其他过敏
-}
-
-// 手术史
-export interface Surgery {
-  name: string;
-  year: string;
-  hospital?: string;
-}
-
-// 病史信息
-export interface MedicalHistory {
-  baselineDiseases?: string[];  // 基础病
-  allergies?: Allergies;        // 过敏史
-  surgeries?: Surgery[];        // 手术史
-  familyHistory?: string[];     // 家族病史
-}
-
-// 医院诊断
-export interface HospitalDiagnosis {
-  name: string;            // 医院名称
-  department: string;      // 科室
-  doctor?: string;         // 医生
-  diagnosis: string;       // 诊断
-  date: string;            // 诊断日期
-  basis?: string;          // 诊断依据
-}
-
-// 诊断信息
-export interface DiagnosisInfo {
-  hospitals?: HospitalDiagnosis[];  // 多家医院诊断
-  finalDiagnosis?: string;          // 最终诊断
-}
-
-// 用药记录
-export interface Medication {
-  name: string;
-  dosage: string;
-  frequency: string;
-  duration: string;
-  efficacy: '有效' | '无效' | '部分有效' | '不良反应';
-}
-
-// 治疗记录
-export interface TreatmentRecord {
-  hospital: string;
-  doctor?: string;
-  medications: Medication[];
-  otherTreatment?: string;
-  startDate: string;
-  endDate?: string;
-}
-
-// 治疗信息
-export interface TreatmentInfo {
-  records?: TreatmentRecord[];      // 治疗记录
-  currentTreatment?: string;        // 当前治疗
-}
-
-// 病程信息
-export interface CourseInfo {
-  startDate?: string;               // 发病日期
-  endDate?: string;                 // 结束日期
-  currentStatus?: '急性期' | '缓解期' | '康复期' | '慢性期';
-}
-
-// 疗效信息
-export interface EfficacyInfo {
-  overall?: '治愈' | '好转' | '无效' | '加重' | '反复';
-  description?: string;
-  lastEvaluation?: string;
-}
-
-// 上传文件
-export interface UploadedFile {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  url: string;             // Base64
-  uploadTime: string;
-  category: 'labReport' | 'prescription' | 'dischargeSummary' | 'image' | 'other';
-  description?: string;
-}
-
-// ========== 原有类型扩展 ==========
-export interface Reply {
-  id: string;
-  consultationId: string;
-  content: string;
-  author: string;
-  authorId: string;
-  identity?: string;      // 身份：专科医生、病友等
-  contact?: string;       // 联系方式（可选）
-  createdAt: string;
-  likes: number;
-  likedBy: string[];
-  isProfessional?: boolean;
-}
-
-export interface Consultation {
-  // 原有字段（保持不变）
-  id: string;
-  symptoms: string;        // 主诉/主要症状（简洁版）
-  description: string;     // 详细描述
-  request: string;         // 主要诉求
-  urgency: 'normal' | 'urgent' | 'critical';
-  status: 'pending' | 'answered' | 'resolved';
-  author: string;
-  authorId: string;
-  createdAt: string;
-  likes: number;
-  likedBy: string[];
-  replyCount: number;
-  replies?: Reply[];
-  isCollected?: boolean;
-  medicalRecords?: string[];  // 诊疗记录ID数组
-  hasMedicalRecords?: boolean; // 是否有诊疗记录
-
-  // ========== 新增字段（来自新表单）==========
-  // 1. 患者基本信息
-  patientInfo?: PatientBasicInfo;
-  
-  // 2. 症状详细描述（支持多个症状）
-  symptomDetails?: SymptomDetail[];
-  
-  // 3. 病史信息
-  medicalHistory?: MedicalHistory;
-  
-  // 4. 诊断信息（支持多家医院）
-  diagnosis?: DiagnosisInfo;
-  
-  // 5. 治疗信息（支持多家医院）
-  treatment?: TreatmentInfo;
-  
-  // 6. 病程信息
-  course?: CourseInfo;
-  
-  // 7. 疗效信息
-  efficacy?: EfficacyInfo;
-  
-  // 8. 上传的文件
-  uploadedFiles?: UploadedFile[];
-  
-  // 9. 信息完整度和参考意义
-  completeness?: number;    // 0-100
-  referenceLevel?: string;  // 'Ⅰ级' | 'Ⅱ级' | 'Ⅲ级' | 'Ⅳ级' | 'Ⅴ级'
-  
-  // 10. 附加信息
-  additionalInfo?: string;  // 补充说明
-}
+import { 
+  Consultation, 
+  Reply, 
+  ConsultationVersion,
+  PatientBasicInfo,
+  SymptomDetail,
+  MedicalHistory,
+  DiagnosisInfo,
+  TreatmentInfo,
+  CourseInfo,
+  EfficacyInfo,
+  UploadedFile 
+} from '../types/consultation';
 
 class ConsultService {
   private readonly CONSULT_KEY = 'medical_consultations';
@@ -242,7 +70,6 @@ class ConsultService {
     data: Partial<Consultation>, 
     authorId: string, 
     author: string,
-    // 新增：接收完整的表单数据
     completeData?: {
       patientInfo?: PatientBasicInfo;
       symptomDetails?: SymptomDetail[];
@@ -257,12 +84,10 @@ class ConsultService {
   ): Consultation {
     const consultations = this.getAllConsultations();
     
-    // 计算信息完整度
     const completeness = this.calculateCompleteness(completeData);
     const referenceLevel = this.getReferenceLevel(completeness);
     
     const newConsultation: Consultation = {
-      // 原有字段
       id: Date.now().toString(),
       symptoms: data.symptoms || '',
       description: data.description || '',
@@ -276,7 +101,6 @@ class ConsultService {
       likedBy: [],
       replyCount: 0,
       
-      // 新增字段（如果有）
       ...(completeData?.patientInfo && { patientInfo: completeData.patientInfo }),
       ...(completeData?.symptomDetails && { symptomDetails: completeData.symptomDetails }),
       ...(completeData?.medicalHistory && { medicalHistory: completeData.medicalHistory }),
@@ -287,92 +111,142 @@ class ConsultService {
       ...(completeData?.uploadedFiles && { uploadedFiles: completeData.uploadedFiles }),
       ...(completeData?.additionalInfo && { additionalInfo: completeData.additionalInfo }),
       
-      // 完整度和参考意义
       completeness,
-      referenceLevel
+      referenceLevel,
+      
+      // ========== 新增版本控制字段 ==========
+      versions: [],
+      currentVersion: 1,
+      editable: true
     };
     
     consultations.unshift(newConsultation);
     localStorage.setItem(this.CONSULT_KEY, JSON.stringify(consultations));
-    console.log('✅ 创建新咨询（完整版）:', {
-      id: newConsultation.id,
-      symptoms: newConsultation.symptoms,
-      completeness: newConsultation.completeness,
-      referenceLevel: newConsultation.referenceLevel,
-      hasPatientInfo: !!newConsultation.patientInfo,
-      hasSymptomDetails: !!(newConsultation.symptomDetails?.length),
-      hasMedicalHistory: !!newConsultation.medicalHistory,
-      hasDiagnosis: !!newConsultation.diagnosis,
-      hasTreatment: !!newConsultation.treatment,
-      hasCourse: !!newConsultation.course,
-      hasEfficacy: !!newConsultation.efficacy,
-      uploadedFilesCount: newConsultation.uploadedFiles?.length || 0
-    });
+    console.log('✅ 创建新咨询（完整版）:', newConsultation.id);
     
     return newConsultation;
   }
 
   /**
-   * 计算信息完整度
+   * ========== 新增：更新咨询信息 ==========
    */
-  private calculateCompleteness(data?: any): number {
-    if (!data) return 0;
+  updateConsultation(
+    id: string, 
+    userId: string, 
+    updates: Partial<Consultation>,
+    changeDescription: string
+  ): boolean {
+    const consultations = this.getAllConsultations();
+    const index = consultations.findIndex(c => c.id === id);
     
-    let total = 0;
-    let filled = 0;
-
-    // 1. 患者基本信息 (30分)
-    if (data.patientInfo) {
-      if (data.patientInfo.name) filled += 5;
-      if (data.patientInfo.age) filled += 5;
-      if (data.patientInfo.gender) filled += 5;
-      if (data.patientInfo.height && data.patientInfo.weight) filled += 5;
-      if (data.patientInfo.location) filled += 5;
-      if (data.patientInfo.occupation) filled += 5;
-    }
-    total += 30;
-
-    // 2. 症状描述 (30分)
-    if (data.symptomDetails?.length) {
-      data.symptomDetails.forEach((s: SymptomDetail) => {
-        if (s.name) filled += 5;
-        if (s.characteristic?.length) filled += 3;
-        if (s.duration) filled += 2;
-        if (s.description) filled += 5;
-      });
-    }
-    total += 30;
-
-    // 3. 病史 (15分)
-    if (data.medicalHistory) {
-      if (data.medicalHistory.baselineDiseases?.length) filled += 5;
-      if (data.medicalHistory.allergies?.drug?.length) filled += 3;
-      if (data.medicalHistory.allergies?.food?.length) filled += 2;
-      if (data.medicalHistory.familyHistory?.length) filled += 5;
-    }
-    total += 15;
-
-    // 4. 诊断和治疗 (15分)
-    if (data.diagnosis?.hospitals?.length) filled += 8;
-    if (data.treatment?.records?.length) filled += 7;
-    total += 15;
-
-    // 5. 主要诉求 (10分)
-    if (data.request) filled += 10;
-    total += 10;
-
-    return Math.min(Math.round((filled / total) * 100), 100);
+    if (index === -1) return false;
+    if (consultations[index].authorId !== userId) return false;
+    
+    const oldConsult = consultations[index];
+    
+    // 创建新版本
+    const newVersion: ConsultationVersion = {
+      id: `ver-${Date.now()}`,
+      version: (oldConsult.versions?.length || 0) + 1,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+      changes: [changeDescription],
+      data: { ...oldConsult }
+    };
+    
+    // 更新咨询
+    consultations[index] = {
+      ...oldConsult,
+      ...updates,
+      versions: [...(oldConsult.versions || []), newVersion],
+      currentVersion: (oldConsult.versions?.length || 0) + 1,
+      lastEditedAt: new Date().toISOString(),
+      lastEditedBy: userId
+    };
+    
+    localStorage.setItem(this.CONSULT_KEY, JSON.stringify(consultations));
+    console.log('✅ 更新咨询:', id);
+    
+    return true;
   }
 
   /**
-   * 获取参考意义级别
+   * ========== 新增：添加追问 ==========
    */
-  private getReferenceLevel(completeness: number): string {
-    if (completeness >= 90) return 'Ⅰ级';
-    if (completeness >= 70) return 'Ⅱ级';
-    if (completeness >= 50) return 'Ⅲ级';
-    if (completeness >= 30) return 'Ⅳ级';
-    return 'Ⅴ级';
+  addFollowUp(consultationId: string, replyId: string, question: string, userId: string, userName: string): Reply {
+    const allReplies = JSON.parse(localStorage.getItem(this.REPLIES_KEY) || '[]');
+    
+    const followUp: Reply = {
+      id: `followup-${Date.now()}`,
+      consultationId,
+      content: `【补充信息】${question}`,
+      author: userName,
+      authorId: userId,
+      identity: 'patient',
+      createdAt: new Date().toISOString(),
+      likes: 0,
+      likedBy: [],
+      isFollowUp: true,
+      inReplyTo: replyId
+    };
+    
+    allReplies.push(followUp);
+    localStorage.setItem(this.REPLIES_KEY, JSON.stringify(allReplies));
+    
+    // 更新咨询状态
+    this.updateConsultationAfterReply(consultationId);
+    
+    console.log('✅ 添加追问:', followUp);
+    return followUp;
+  }
+
+  /**
+   * ========== 新增：获取版本历史 ==========
+   */
+  getVersionHistory(consultationId: string): ConsultationVersion[] {
+    const consultation = this.getConsultation(consultationId);
+    return consultation?.versions || [];
+  }
+
+  /**
+   * ========== 新增：恢复到指定版本 ==========
+   */
+  restoreVersion(consultationId: string, versionId: string, userId: string): boolean {
+    const consultations = this.getAllConsultations();
+    const index = consultations.findIndex(c => c.id === consultationId);
+    
+    if (index === -1) return false;
+    if (consultations[index].authorId !== userId) return false;
+    
+    const consultation = consultations[index];
+    const targetVersion = consultation.versions?.find(v => v.id === versionId);
+    
+    if (!targetVersion) return false;
+    
+    // 创建新版本（当前状态）
+    const newVersion: ConsultationVersion = {
+      id: `ver-${Date.now()}`,
+      version: (consultation.versions?.length || 0) + 1,
+      createdAt: new Date().toISOString(),
+      createdBy: userId,
+      changes: [`恢复到版本 ${targetVersion.version}`],
+      data: { ...consultation }
+    };
+    
+    // 恢复到目标版本的数据
+    consultations[index] = {
+      ...consultation,
+      ...targetVersion.data,
+      versions: [...(consultation.versions || []), newVersion],
+      currentVersion: (consultation.versions?.length || 0) + 1,
+      lastEditedAt: new Date().toISOString(),
+      lastEditedBy: userId
+    };
+    
+    localStorage.setItem(this.CONSULT_KEY, JSON.stringify(consultations));
+    console.log('✅ 恢复到版本:', versionId);
+    
+    return true;
   }
 
   /**
@@ -384,12 +258,10 @@ class ConsultService {
     
     if (index === -1) return false;
     
-    // 初始化 medicalRecords 数组
     if (!consultations[index].medicalRecords) {
       consultations[index].medicalRecords = [];
     }
     
-    // 添加新的记录ID（去重）
     const existing = new Set(consultations[index].medicalRecords);
     recordIds.forEach(id => existing.add(id));
     consultations[index].medicalRecords = Array.from(existing);
@@ -414,7 +286,6 @@ class ConsultService {
     consultations.splice(index, 1);
     localStorage.setItem(this.CONSULT_KEY, JSON.stringify(consultations));
     
-    // 同时删除相关回复
     this.deleteAllReplies(id);
     
     console.log('✅ 删除咨询:', id);
@@ -434,12 +305,10 @@ class ConsultService {
     const hasLiked = consultation.likedBy?.includes(userId);
     
     if (hasLiked) {
-      // 取消点赞
       consultation.likes = (consultation.likes || 0) - 1;
       consultation.likedBy = consultation.likedBy?.filter(uid => uid !== userId) || [];
       console.log('👎 取消点赞咨询:', id);
     } else {
-      // 点赞
       consultation.likes = (consultation.likes || 0) + 1;
       consultation.likedBy = [...(consultation.likedBy || []), userId];
       console.log('👍 点赞咨询:', id);
@@ -496,7 +365,6 @@ class ConsultService {
     allReplies.push(newReply);
     localStorage.setItem(this.REPLIES_KEY, JSON.stringify(allReplies));
     
-    // 更新咨询的回复数和状态
     this.updateConsultationAfterReply(consultationId);
     
     console.log('✅ 添加回复:', newReply);
@@ -517,7 +385,6 @@ class ConsultService {
     allReplies.splice(index, 1);
     localStorage.setItem(this.REPLIES_KEY, JSON.stringify(allReplies));
     
-    // 更新咨询的回复数
     this.updateConsultationAfterReply(consultationId);
     
     console.log('✅ 删除回复:', replyId);
@@ -580,10 +447,61 @@ class ConsultService {
   }
 
   /**
-   * 获取咨询的完整信息（包括所有新字段）
+   * 计算信息完整度
    */
-  getConsultationFull(id: string): Consultation | null {
-    return this.getConsultation(id);
+  private calculateCompleteness(data?: any): number {
+    if (!data) return 0;
+    
+    let total = 0;
+    let filled = 0;
+
+    if (data.patientInfo) {
+      if (data.patientInfo.name) filled += 5;
+      if (data.patientInfo.age) filled += 5;
+      if (data.patientInfo.gender) filled += 5;
+      if (data.patientInfo.height && data.patientInfo.weight) filled += 5;
+      if (data.patientInfo.location) filled += 5;
+      if (data.patientInfo.occupation) filled += 5;
+    }
+    total += 30;
+
+    if (data.symptomDetails?.length) {
+      data.symptomDetails.forEach((s: SymptomDetail) => {
+        if (s.name) filled += 5;
+        if (s.characteristic?.length) filled += 3;
+        if (s.duration) filled += 2;
+        if (s.description) filled += 5;
+      });
+    }
+    total += 30;
+
+    if (data.medicalHistory) {
+      if (data.medicalHistory.baselineDiseases?.length) filled += 5;
+      if (data.medicalHistory.allergies?.drug?.length) filled += 3;
+      if (data.medicalHistory.allergies?.food?.length) filled += 2;
+      if (data.medicalHistory.familyHistory?.length) filled += 5;
+    }
+    total += 15;
+
+    if (data.diagnosis?.hospitals?.length) filled += 8;
+    if (data.treatment?.records?.length) filled += 7;
+    total += 15;
+
+    if (data.request) filled += 10;
+    total += 10;
+
+    return Math.min(Math.round((filled / total) * 100), 100);
+  }
+
+  /**
+   * 获取参考意义级别
+   */
+  private getReferenceLevel(completeness: number): string {
+    if (completeness >= 90) return 'Ⅰ级';
+    if (completeness >= 70) return 'Ⅱ级';
+    if (completeness >= 50) return 'Ⅲ级';
+    if (completeness >= 30) return 'Ⅳ级';
+    return 'Ⅴ级';
   }
 }
 

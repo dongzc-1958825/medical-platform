@@ -12,6 +12,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth';
+import { supabase } from '../../services/supabaseClient';
 import CollectButton from '../../components/collection/CollectButton';
 
 interface MedicalCase {
@@ -48,53 +49,67 @@ const MobileCasesPage: React.FC = () => {
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
   const [deletingCaseTitle, setDeletingCaseTitle] = useState('');
 
-  useEffect(() => {
-    loadCases();
-  }, []);
-
-  const loadCases = () => {
+  // 从 Supabase 加载医案
+  const loadCases = async () => {
     try {
       setIsLoading(true);
-      const savedCases = localStorage.getItem('medical_cases');
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      if (savedCases) {
-        const parsedCases = JSON.parse(savedCases);
-        const enhancedCases = parsedCases.map((c: MedicalCase) => ({
-          ...c,
-          likeCount: c.likeCount || 0,
-          commentCount: c.commentCount || 0,
-          isLiked: c.isLiked || false
-        }));
-        setCases(enhancedCases);
-      } else {
-        // 示例数据
-        const sampleCases: MedicalCase[] = [
-          {
-            id: '1',
-            title: '感冒病例分析',
-            patientName: '张先生',
-            diagnosis: '上呼吸道感染',
-            symptoms: ['头痛', '发热', '咳嗽'],
-            createdAt: new Date().toISOString(),
-            tags: ['感冒', '呼吸道'],
-            description: '患者因发热、头痛、咳嗽前来就诊',
-            treatment: '布洛芬退热，复方甘草口服液止咳',
-            outcome: '3天后复诊，体温正常',
-            likeCount: 12,
-            commentCount: 5,
-            isLiked: false,
-            isFavorite: false
-          }
-        ];
-        setCases(sampleCases);
-        localStorage.setItem('medical_cases', JSON.stringify(sampleCases));
-      }
+      if (error) throw error;
+      
+      const enhancedCases: MedicalCase[] = (data || []).map((item: any) => ({
+        id: item.id,
+        title: item.title || '无标题',
+        patientName: item.patient_name || item.author_name || '匿名',
+        diagnosis: item.diagnosis || '',
+        symptoms: item.symptoms || [],
+        createdAt: item.created_at,
+        tags: item.tags || [],
+        description: item.content || item.description,
+        treatment: item.treatment,
+        outcome: item.outcome,
+        imageUrls: item.image_urls || [],
+        isFavorite: false,
+        likeCount: item.like_count || 0,
+        commentCount: item.comment_count || 0,
+        isLiked: false,
+        author: item.author_name,
+        authorId: item.user_id
+      }));
+      
+      setCases(enhancedCases);
     } catch (error) {
-      console.error('加载医案数据失败:', error);
+      console.error('加载医案失败:', error);
     } finally {
       setIsLoading(false);
     }
   };
+
+  // 删除医案
+  const handleDeleteCase = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('cases')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      // 刷新列表
+      await loadCases();
+      alert('删除成功');
+    } catch (error) {
+      console.error('删除失败:', error);
+      alert('删除失败，请重试');
+    }
+  };
+
+  useEffect(() => {
+    loadCases();
+  }, []);
 
   const filteredCases = useMemo(() => {
     let result = cases;
@@ -130,13 +145,9 @@ const MobileCasesPage: React.FC = () => {
     }));
   };
 
-    const handleDeleteClick = (id: string, title: string) => {
-    // 获取当前用户和医案信息
-    const userStr = localStorage.getItem('current-user');
-    const user = userStr ? JSON.parse(userStr) : null;
+  const handleDeleteClick = (id: string, title: string) => {
+    // 检查权限：作者或管理员可删除
     const caseItem = cases.find(c => c.id === id);
-    
-    // 只有作者或超级管理员可以删除
     const isAuthor = user?.id === caseItem?.authorId;
     const isAdmin = user?.role === 'super_admin' || user?.role === 'admin';
     
@@ -150,11 +161,9 @@ const MobileCasesPage: React.FC = () => {
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingCaseId) {
-      const updatedCases = cases.filter(c => c.id !== deletingCaseId);
-      setCases(updatedCases);
-      localStorage.setItem('medical_cases', JSON.stringify(updatedCases));
+      await handleDeleteCase(deletingCaseId);
     }
     setShowDeleteConfirm(false);
     setDeletingCaseId(null);
