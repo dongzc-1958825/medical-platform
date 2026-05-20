@@ -1,6 +1,6 @@
 ﻿// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { supabase, checkSupabaseConnection } from "../services/supabaseClient";
+import { supabase } from "../services/supabaseClient";
 import { User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface User {
@@ -63,15 +63,15 @@ const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<User | null
       return {
         id: supabaseUser.id,
         username: data.username || supabaseUser.email?.split("@")[0] || "",
-        idCard: data.idCard || "",
+        idCard: data.id_card || "",
         email: supabaseUser.email || "",
         phone: data.phone || "",
         role: data.role || "patient",
         avatar: data.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${supabaseUser.email}`,
         specialties: data.specialties || [],
         remark: data.remark || "",
-        createdAt: data.createdAt || supabaseUser.created_at,
-        updatedAt: data.updatedAt || "",
+        createdAt: data.created_at || supabaseUser.created_at,
+        updatedAt: data.updated_at || "",
       };
     }
     
@@ -98,14 +98,14 @@ const upsertProfile = async (user: SupabaseUser, userData: Partial<User>) => {
   const profile = {
     id: user.id,
     username: userData.username || user.email?.split("@")[0] || "",
-    idCard: userData.idCard || "",
+    id_card: userData.idCard || "",
     email: user.email,
     phone: userData.phone || "",
     role: userData.role || "patient",
     avatar: userData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`,
     specialties: userData.specialties || [],
     remark: userData.remark || "",
-    updatedAt: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
   };
 
   const { error } = await supabase
@@ -128,8 +128,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const initAuth = async () => {
       console.log("🔄 AuthContext - 初始化 Supabase 认证");
       
-      await checkSupabaseConnection();
+      // ❌ 删除：这个函数查询不存在的 profiles 表导致卡死
+      // await checkSupabaseConnection();
       
+      // ✅ 直接获取会话，不检查连接
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
@@ -294,13 +296,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const profile = {
         id: session.user.id,
         username: userData.username || user.username,
-        idCard: userData.idCard || user.idCard,
+        id_card: userData.idCard || user.idCard,
         phone: userData.phone || user.phone,
         role: userData.role || user.role,
         avatar: userData.avatar || user.avatar,
         specialties: userData.specialties || user.specialties,
         remark: userData.remark || user.remark,
-        updatedAt: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
       const { error } = await supabase
