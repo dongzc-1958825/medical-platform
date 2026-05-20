@@ -30,7 +30,7 @@ const MobileCasesPage: React.FC = () => {
   const { user } = useAuth();
   const [cases, setCases] = useState<MedicalCase[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);  // âœ… æ”¹ä¸º false
   const [selectedFilter, setSelectedFilter] = useState<"all" | "recent" | "favorites">("all");
   const [showSearch, setShowSearch] = useState(false);
 
@@ -38,10 +38,10 @@ const MobileCasesPage: React.FC = () => {
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
   const [deletingCaseTitle, setDeletingCaseTitle] = useState("");
 
-  // ¼ÓÔØÁĞ±í
+  // åŠ è½½åˆ—è¡¨
   const loadCases = async () => {
+    console.log("ğŸ”´ loadCases è¢«è°ƒç”¨äº†");
     try {
-      setIsLoading(true);
       const { data, error } = await supabase
         .from("cases")
         .select("*")
@@ -49,27 +49,30 @@ const MobileCasesPage: React.FC = () => {
       if (error) throw error;
       const enhanced: MedicalCase[] = (data || []).map((c) => ({
         id: c.id,
-        title: c.title || "ÎŞ±êÌâ",
+        title: c.title || "æ— æ ‡é¢˜",
         content: c.content || "",
         user_id: c.user_id,
         created_at: c.created_at,
         diagnosis: c.diagnosis || c.content?.substring(0, 50) || "",
         symptoms: c.symptoms || [],
-        patientName: c.patient_name || c.user_id?.slice(0, 8) || "ÄäÃû",
+        patientName: c.patient_name || c.user_id?.slice(0, 8) || "åŒ¿å",
         likeCount: c.like_count || 0,
         commentCount: c.comment_count || 0,
         isLiked: false,
         isFavorite: false,
       }));
       setCases(enhanced);
+      console.log("ğŸ”´ æ•°æ®å·²è®¾ç½®ï¼Œå…±", enhanced.length, "æ¡");
     } catch (err) {
-      console.error("¼ÓÔØÒ½°¸Ê§°Ü:", err);
+      console.error("åŠ è½½åŒ»æ¡ˆå¤±è´¥:", err);
     } finally {
       setIsLoading(false);
+      console.log("ğŸ”´ isLoading å·²è®¾ä¸º false");
     }
   };
 
   useEffect(() => {
+    console.log("ğŸ”´ useEffect æ‰§è¡Œäº†");
     loadCases();
   }, []);
 
@@ -87,7 +90,7 @@ const MobileCasesPage: React.FC = () => {
     const isAuthor = user?.id === cases.find((c) => c.id === id)?.user_id;
     const isAdmin = user?.role === "super_admin" || user?.role === "admin";
     if (!isAuthor && !isAdmin) {
-      alert("ÄúÃ»ÓĞÈ¨ÏŞÉ¾³ı´ËÒ½°¸");
+      alert("æ‚¨æ²¡æœ‰æƒé™åˆ é™¤æ­¤åŒ»æ¡ˆ");
       return;
     }
     setDeletingCaseId(id);
@@ -99,7 +102,7 @@ const MobileCasesPage: React.FC = () => {
     if (deletingCaseId) {
       const { error } = await supabase.from("cases").delete().eq("id", deletingCaseId);
       if (error) {
-        alert("É¾³ıÊ§°Ü£º" + error.message);
+        alert("åˆ é™¤å¤±è´¥ï¼š" + error.message);
       } else {
         await loadCases();
       }
@@ -135,9 +138,9 @@ const MobileCasesPage: React.FC = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diff = Math.ceil((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff === 0) return "½ñÌì";
-    if (diff === 1) return "×òÌì";
-    if (diff <= 7) return `${diff}ÌìÇ°`;
+    if (diff === 0) return "ä»Šå¤©";
+    if (diff === 1) return "æ˜¨å¤©";
+    if (diff <= 7) return `${diff}å¤©å‰`;
     return date.toLocaleDateString("zh-CN", { month: "numeric", day: "numeric" });
   };
 
@@ -145,7 +148,7 @@ const MobileCasesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="bg-white border-b sticky top-0 z-10">
         <div className="flex justify-between items-center px-4 py-3">
-          <h1 className="text-xl font-bold">Ò½°¸·ÖÏí</h1>
+          <h1 className="text-xl font-bold">åŒ»æ¡ˆåˆ†äº«</h1>
           <div className="flex gap-3">
             <button onClick={() => setShowSearch(!showSearch)}>
               <Search className="w-5 h-5" />
@@ -154,7 +157,7 @@ const MobileCasesPage: React.FC = () => {
               onClick={() => navigate("/mobile/cases/create")}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg"
             >
-              ·¢²¼
+              å‘å¸ƒ
             </button>
           </div>
         </div>
@@ -162,7 +165,7 @@ const MobileCasesPage: React.FC = () => {
           <div className="px-4 pb-3">
             <input
               className="w-full p-2 bg-gray-100 rounded-lg"
-              placeholder="ËÑË÷"
+              placeholder="æœç´¢"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -177,11 +180,11 @@ const MobileCasesPage: React.FC = () => {
                 selectedFilter === f ? "bg-blue-600 text-white" : "bg-gray-100"
               }`}
             >
-              {f === "all" ? "È«²¿" : f === "recent" ? "×î½üÒ»ÖÜ" : "ÎÒµÄÊÕ²Ø"}
+              {f === "all" ? "å…¨éƒ¨" : f === "recent" ? "æœ€è¿‘ä¸€å‘¨" : "æˆ‘çš„æ”¶è—"}
             </button>
           ))}
         </div>
-        <div className="px-4 pb-2 text-sm text-gray-500">¹² {filteredCases.length} ¸öÒ½°¸</div>
+        <div className="px-4 pb-2 text-sm text-gray-500">å…± {filteredCases.length} ä¸ªåŒ»æ¡ˆ</div>
       </div>
 
       <div className="p-4">
@@ -190,7 +193,7 @@ const MobileCasesPage: React.FC = () => {
             <div className="animate-spin w-8 h-8 border-b-2 border-blue-600 rounded-full" />
           </div>
         ) : filteredCases.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">ÔİÎŞÒ½°¸</div>
+          <div className="text-center py-12 text-gray-500">æš‚æ— åŒ»æ¡ˆ</div>
         ) : (
           <div className="space-y-4">
             {filteredCases.map((item) => (
@@ -237,13 +240,13 @@ const MobileCasesPage: React.FC = () => {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white rounded-xl p-6 max-w-sm w-full">
-            <p>È·¶¨É¾³ı¡¸{deletingCaseTitle}¡¹Âğ£¿</p>
+            <p>ç¡®å®šåˆ é™¤ã€Œ{deletingCaseTitle}ã€å—ï¼Ÿ</p>
             <div className="flex justify-end gap-2 mt-4">
               <button onClick={() => setShowDeleteConfirm(false)} className="px-3 py-1 bg-gray-200 rounded">
-                È¡Ïû
+                å–æ¶ˆ
               </button>
               <button onClick={handleConfirmDelete} className="px-3 py-1 bg-red-600 text-white rounded">
-                É¾³ı
+                åˆ é™¤
               </button>
             </div>
           </div>
