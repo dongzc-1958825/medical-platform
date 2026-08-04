@@ -19,9 +19,9 @@ import {
   Edit
 } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth';
+import { supabase } from '../../services/supabaseClient';
 import CollectButton from '../../components/collection/CollectButton';
 
-// 类型定义
 interface Comment {
   id: string;
   caseId: string;
@@ -42,7 +42,7 @@ interface UploadedFile {
   fileData: string;
 }
 
-// ========== 身份选择器组件 ==========
+// 身份选择器组件
 const IdentitySelector: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -78,7 +78,7 @@ const IdentitySelector: React.FC<{
   );
 };
 
-// ========== 文件预览组件 ==========
+// 文件预览组件
 const FilePreview: React.FC<{ 
   file: UploadedFile;
   onDelete?: (id: string) => void;
@@ -107,15 +107,12 @@ const FilePreview: React.FC<{
         const base64Data = file.fileData.split(',')[1] || file.fileData;
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
-        
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: file.fileType });
         const blobUrl = URL.createObjectURL(blob);
-        
         const previewWindow = window.open('', '_blank');
         if (previewWindow) {
           previewWindow.document.write(`
@@ -136,7 +133,6 @@ const FilePreview: React.FC<{
             </html>
           `);
           previewWindow.document.close();
-          
           previewWindow.onunload = () => {
             URL.revokeObjectURL(blobUrl);
           };
@@ -150,15 +146,12 @@ const FilePreview: React.FC<{
         const base64Data = file.fileData.split(',')[1] || file.fileData;
         const byteCharacters = atob(base64Data);
         const byteNumbers = new Array(byteCharacters.length);
-        
         for (let i = 0; i < byteCharacters.length; i++) {
           byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
-        
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: 'application/pdf' });
         const blobUrl = URL.createObjectURL(blob);
-        
         const previewWindow = window.open('', '_blank');
         if (previewWindow) {
           previewWindow.document.write(`
@@ -184,7 +177,6 @@ const FilePreview: React.FC<{
             </html>
           `);
           previewWindow.document.close();
-          
           previewWindow.onunload = () => {
             URL.revokeObjectURL(blobUrl);
           };
@@ -201,7 +193,6 @@ const FilePreview: React.FC<{
       alert('文件数据不存在');
       return;
     }
-
     try {
       const link = document.createElement('a');
       link.href = file.fileData;
@@ -259,7 +250,7 @@ const FilePreview: React.FC<{
   );
 };
 
-// ========== 评论项组件 ==========
+// 评论项组件
 const CommentItem: React.FC<{
   comment: Comment;
   currentUserId: string;
@@ -411,64 +402,52 @@ const MobileCaseDetailPage: React.FC = () => {
     }
   }, [caseItem, isEditing]);
 
-  const loadData = () => {
+  // 从 Supabase 加载医案数据
+  const loadData = async () => {
     setLoading(true);
     try {
-      const savedCases = localStorage.getItem('medical_cases');
-      if (savedCases) {
-        const cases = JSON.parse(savedCases);
-        const found = cases.find((c: any) => c.id === id);
-        setCaseItem(found);
+      // 1. 从 Supabase 获取医案
+      const { data, error } = await supabase
+        .from('cases')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setCaseItem(data);
         
-        if (found?.uploadedFiles?.length > 0) {
-          const files: UploadedFile[] = found.uploadedFiles.map((f: any, index: number) => ({
+        // 处理上传的文件
+        if (data.image_urls && data.image_urls.length > 0) {
+          const files: UploadedFile[] = data.image_urls.map((url: string, index: number) => ({
             id: `file-${index}-${Date.now()}`,
-            fileName: f.name || '未命名文件',
-            fileType: f.type || 'application/octet-stream',
-            fileSize: f.size || 0,
-            fileData: f.url || f.fileData || ''
+            fileName: `图片${index + 1}`,
+            fileType: 'image/png',
+            fileSize: 0,
+            fileData: url
           }));
           setUploadedFiles(files);
         }
       }
 
+      // 2. 从 Supabase 获取评论（如果有评论表）
+      // 暂时使用 localStorage 作为过渡，后续迁移到 Supabase
       const savedComments = localStorage.getItem(`case_comments_${id}`);
       if (savedComments) {
         setComments(JSON.parse(savedComments));
       }
     } catch (error) {
-      console.error('加载失败:', error);
+      console.error('加载医案失败:', error);
+      alert('医案不存在，返回列表');
+      navigate('/mobile/cases');
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteFile = (fileId: string) => {
-    const fileToDelete = uploadedFiles.find(f => f.id === fileId);
-    if (!fileToDelete) return;
-
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-    
-    if (caseItem) {
-      const updatedUploadedFiles = caseItem.uploadedFiles.filter((f: any) => 
-        f.name !== fileToDelete.fileName
-      );
-      
-      const updatedCase = {
-        ...caseItem,
-        uploadedFiles: updatedUploadedFiles
-      };
-      
-      const savedCases = localStorage.getItem('medical_cases');
-      if (savedCases) {
-        const cases = JSON.parse(savedCases);
-        const index = cases.findIndex((c: any) => c.id === id);
-        if (index !== -1) {
-          cases[index] = updatedCase;
-          localStorage.setItem('medical_cases', JSON.stringify(cases));
-        }
-      }
-    }
   };
 
   const handleAddComment = () => {
@@ -506,7 +485,6 @@ const MobileCaseDetailPage: React.FC = () => {
       if (comment.id === commentId) {
         const liked = comment.likedBy?.includes(user.id);
         const likedBy = comment.likedBy || [];
-        
         return {
           ...comment,
           likedBy: liked 
@@ -532,7 +510,7 @@ const MobileCaseDetailPage: React.FC = () => {
     localStorage.setItem(`case_comments_${id}`, JSON.stringify(updatedComments));
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!caseItem || !user) return;
     
     const updatedCase = {
@@ -544,22 +522,33 @@ const MobileCaseDetailPage: React.FC = () => {
       treatment: editFormData.treatment,
       outcome: editFormData.outcome,
       tags: editFormData.tags,
-      updatedAt: new Date().toISOString()
+      updated_at: new Date().toISOString()
     };
     
-    const savedCases = localStorage.getItem('medical_cases');
-    if (savedCases) {
-      const cases = JSON.parse(savedCases);
-      const index = cases.findIndex((c: any) => c.id === caseItem.id);
-      if (index !== -1) {
-        cases[index] = updatedCase;
-        localStorage.setItem('medical_cases', JSON.stringify(cases));
-      }
+    try {
+      const { error } = await supabase
+        .from('cases')
+        .update({
+          title: editFormData.title,
+          diagnosis: editFormData.diagnosis,
+          symptoms: editFormData.symptoms,
+          description: editFormData.description,
+          treatment: editFormData.treatment,
+          outcome: editFormData.outcome,
+          tags: editFormData.tags,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', caseItem.id);
+
+      if (error) throw error;
+
+      setCaseItem(updatedCase);
+      setIsEditing(false);
+      alert('医案已更新');
+    } catch (error) {
+      console.error('更新失败:', error);
+      alert('更新失败，请重试');
     }
-    
-    setCaseItem(updatedCase);
-    setIsEditing(false);
-    alert('医案已更新');
   };
 
   if (loading) {
@@ -599,22 +588,22 @@ const MobileCaseDetailPage: React.FC = () => {
           </button>
           <h1 className="flex-1 text-center font-semibold">医案详情</h1>
           <div className="flex items-center gap-2">
-           {(user?.id === caseItem.authorId || user?.role === 'admin' || user?.role === 'super_admin') && (
-  <button
-    onClick={() => setIsEditing(true)}
-    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-    title="编辑"
-  >
-    <Edit className="w-5 h-5 text-gray-600" />
-  </button>
-)}
+            {(user?.id === caseItem.user_id || user?.role === 'admin' || user?.role === 'super_admin') && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="编辑"
+              >
+                <Edit className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
             <CollectButton
               itemId={caseItem.id}
               itemType="case"
               itemData={{
                 title: caseItem.title,
                 description: caseItem.description || caseItem.diagnosis,
-                date: caseItem.createdAt
+                date: caseItem.created_at
               }}
               initialCollected={caseItem.isFavorite || false}
             />
@@ -655,7 +644,7 @@ const MobileCaseDetailPage: React.FC = () => {
                 value={editFormData.symptoms.join(', ')}
                 onChange={(e) => setEditFormData({
                   ...editFormData, 
-                  symptoms: e.target.value.split(/[,，]+/).map(s => s.trim()).filter(s => s)
+                  symptoms: e.target.value.split(/[,，、]+/).map(s => s.trim()).filter(s => s)
                 })}
                 placeholder="例如：头痛, 发热, 咳嗽"
                 className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -699,7 +688,7 @@ const MobileCaseDetailPage: React.FC = () => {
                 value={editFormData.tags.join(', ')}
                 onChange={(e) => setEditFormData({
                   ...editFormData, 
-                  tags: e.target.value.split(/[,，]+/).map(s => s.trim()).filter(s => s)
+                  tags: e.target.value.split(/[,，、]+/).map(s => s.trim()).filter(s => s)
                 })}
                 placeholder="例如：感冒, 呼吸道"
                 className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -728,9 +717,9 @@ const MobileCaseDetailPage: React.FC = () => {
               
               <div className="flex items-center gap-2 text-xs text-gray-500 mb-4">
                 <User className="w-3 h-3" />
-                <span>{caseItem.patientName}</span>
+                <span>{caseItem.patient_name || '匿名'}</span>
                 <Clock className="w-3 h-3 ml-2" />
-                <span>{new Date(caseItem.createdAt).toLocaleDateString()}</span>
+                <span>{new Date(caseItem.created_at).toLocaleDateString()}</span>
               </div>
 
               <div className="mb-3">
@@ -796,32 +785,17 @@ const MobileCaseDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {caseItem.imageUrls?.length > 0 && (
+              {uploadedFiles.length > 0 && (
                 <div className="mt-4">
                   <span className="text-xs text-gray-500 block mb-2">相关图片</span>
                   <div className="grid grid-cols-3 gap-2">
-                    {caseItem.imageUrls.map((url: string, idx: number) => (
-                      <img
-                        key={idx}
-                        src={url}
-                        alt={`图片${idx + 1}`}
-                        className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => window.open(url, '_blank')}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {uploadedFiles.length > 0 && (
-                <div className="mt-4">
-                  <span className="text-xs text-gray-500 block mb-2">相关文件</span>
-                  <div className="space-y-2">
                     {uploadedFiles.map((file) => (
-                      <FilePreview 
-                        key={file.id} 
-                        file={file} 
-                        onDelete={handleDeleteFile}
+                      <img
+                        key={file.id}
+                        src={file.fileData}
+                        alt={file.fileName}
+                        className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(file.fileData, '_blank')}
                       />
                     ))}
                   </div>

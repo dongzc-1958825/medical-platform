@@ -599,7 +599,7 @@ const MobileCaseDetailPage: React.FC = () => {
           </button>
           <h1 className="flex-1 text-center font-semibold">医案详情</h1>
           <div className="flex items-center gap-2">
-            {(user?.id === caseItem.authorId || user?.role === 'admin') && (
+           {(user?.id === caseItem.authorId || user?.role === 'admin' || user?.role === 'super_admin') && (
   <button
     onClick={() => setIsEditing(true)}
     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
