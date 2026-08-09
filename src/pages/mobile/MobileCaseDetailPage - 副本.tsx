@@ -24,17 +24,14 @@ import CollectButton from '../../components/collection/CollectButton';
 
 interface Comment {
   id: string;
-  case_id: string;
-  user_id: string;
+  caseId: string;
+  authorId: string;
+  author: string;
   content: string;
-  created_at: string;
-  updated_at?: string;
-  // 前端扩展字段
-  author?: string;
-  author_username?: string;
-  identity?: 'specialist' | 'general' | 'patient' | 'other';
-  likes?: number;
+  createdAt: string;
+  likes: number;
   likedBy?: string[];
+  identity?: 'specialist' | 'general' | 'patient' | 'other';
 }
 
 interface UploadedFile {
@@ -253,6 +250,105 @@ const FilePreview: React.FC<{
   );
 };
 
+// 评论项组件
+const CommentItem: React.FC<{
+  comment: Comment;
+  currentUserId: string;
+  onLike: (id: string) => void;
+  onDelete: (id: string) => void;
+}> = ({ comment, currentUserId, onLike, onDelete }) => {
+  const canDelete = currentUserId === comment.authorId;
+  const liked = comment.likedBy?.includes(currentUserId);
+
+  const getIdentityIcon = () => {
+    switch(comment.identity) {
+      case 'specialist': return <Stethoscope className="w-4 h-4 text-blue-600" />;
+      case 'general': return <Award className="w-4 h-4 text-purple-600" />;
+      case 'patient': return <User className="w-4 h-4 text-green-600" />;
+      default: return <User className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getIdentityText = () => {
+    switch(comment.identity) {
+      case 'specialist': return '专科医生';
+      case 'general': return '非专科医生';
+      case 'patient': return '病友';
+      default: return '其他';
+    }
+  };
+
+  const getIdentityColor = () => {
+    switch(comment.identity) {
+      case 'specialist': return 'bg-blue-50 text-blue-600';
+      case 'general': return 'bg-purple-50 text-purple-600';
+      case 'patient': return 'bg-green-50 text-green-600';
+      default: return 'bg-gray-50 text-gray-600';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return '刚刚';
+    if (diffMins < 60) return `${diffMins}分钟前`;
+    if (diffHours < 24) return `${diffHours}小时前`;
+    if (diffDays < 7) return `${diffDays}天前`;
+    return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+  };
+
+  return (
+    <div className="bg-white rounded-xl p-4 shadow-sm mb-3">
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            {getIdentityIcon()}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-900">{comment.author}</span>
+              {comment.identity && (
+                <span className={`text-xs px-2 py-0.5 rounded-full ${getIdentityColor()}`}>
+                  {getIdentityText()}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
+              <Clock className="w-3 h-3" />
+              <span>{formatDate(comment.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+        {canDelete && (
+          <button
+            onClick={() => onDelete(comment.id)}
+            className="text-gray-400 hover:text-red-500"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+
+      <p className="text-gray-700 text-sm mb-3 whitespace-pre-wrap">{comment.content}</p>
+
+      <div className="flex items-center gap-4 pt-2 border-t">
+        <button
+          onClick={() => onLike(comment.id)}
+          className={`flex items-center gap-1 text-sm ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+        >
+          <Heart className={`w-4 h-4 ${liked ? 'fill-red-500' : ''}`} />
+          <span>{comment.likes || 0}</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ========== 医案详情页主组件 ==========
 const MobileCaseDetailPage: React.FC = () => {
   const navigate = useNavigate();
@@ -306,11 +402,11 @@ const MobileCaseDetailPage: React.FC = () => {
     }
   }, [caseItem, isEditing]);
 
-  // 从 Supabase 加载医案数据和评论
+  // 从 Supabase 加载医案数据
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. 获取医案
+      // 1. 从 Supabase 获取医案
       const { data, error } = await supabase
         .from('cases')
         .select('*')
@@ -335,39 +431,11 @@ const MobileCaseDetailPage: React.FC = () => {
         }
       }
 
-      // 2. 从 Supabase 获取评论
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('case_id', id)
-        .order('created_at', { ascending: false });
-
-      if (!commentsError && commentsData) {
-        // 获取每个评论的用户信息
-        const userIds = commentsData.map(c => c.user_id);
-        if (userIds.length > 0) {
-          const { data: profilesData } = await supabase
-            .from('profiles')
-            .select('id, username, avatar')
-            .in('id', userIds);
-          
-          const profileMap = (profilesData || []).reduce((acc, p) => {
-            acc[p.id] = p;
-            return acc;
-          }, {} as Record<string, any>);
-          
-          const commentsWithAuthors = commentsData.map(c => ({
-            ...c,
-            author: profileMap[c.user_id]?.username || '匿名用户',
-            author_username: profileMap[c.user_id]?.username,
-            identity: 'patient',
-            likes: 0,
-            likedBy: []
-          }));
-          setComments(commentsWithAuthors);
-        } else {
-          setComments(commentsData);
-        }
+      // 2. 从 Supabase 获取评论（如果有评论表）
+      // 暂时使用 localStorage 作为过渡，后续迁移到 Supabase
+      const savedComments = localStorage.getItem(`case_comments_${id}`);
+      if (savedComments) {
+        setComments(JSON.parse(savedComments));
       }
     } catch (error) {
       console.error('加载医案失败:', error);
@@ -382,8 +450,7 @@ const MobileCaseDetailPage: React.FC = () => {
     setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
   };
 
-  // 添加评论到 Supabase
-  const handleAddComment = async () => {
+  const handleAddComment = () => {
     if (!user) {
       alert('请先登录');
       return;
@@ -391,88 +458,72 @@ const MobileCaseDetailPage: React.FC = () => {
     if (!commentContent.trim()) return;
     if (!id) return;
 
-    try {
-      const { data, error } = await supabase
-        .from('comments')
-        .insert({
-          case_id: id,
-          user_id: user.id,
-          content: commentContent.trim(),
-          created_at: new Date().toISOString()
-        })
-        .select();
+    const newComment: Comment = {
+      id: Date.now().toString(),
+      caseId: id,
+      authorId: user.id,
+      author: user.username || '用户',
+      content: commentContent.trim(),
+      createdAt: new Date().toISOString(),
+      likes: 0,
+      likedBy: [],
+      identity: identity
+    };
 
-      if (error) {
-        console.error('评论失败:', error);
-        alert('评论失败，请重试');
-        return;
-      }
-
-      if (data) {
-        const newComment = {
-          ...data[0],
-          author: user.username || '用户',
-          author_username: user.username,
-          identity: identity,
-          likes: 0,
-          likedBy: []
-        };
-        setComments(prev => [newComment, ...prev]);
-        setCommentContent('');
-        setContact('');
-        setShowContact(false);
-      }
-    } catch (error) {
-      console.error('评论异常:', error);
-      alert('评论失败，请重试');
-    }
+    const updatedComments = [newComment, ...comments];
+    setComments(updatedComments);
+    localStorage.setItem(`case_comments_${id}`, JSON.stringify(updatedComments));
+    setCommentContent('');
+    setContact('');
+    setShowContact(false);
   };
 
-  // 删除评论
-  const handleDeleteComment = async (commentId: string) => {
+  const handleLikeComment = (commentId: string) => {
+    if (!user) return;
+
+    setComments(prev => prev.map(comment => {
+      if (comment.id === commentId) {
+        const liked = comment.likedBy?.includes(user.id);
+        const likedBy = comment.likedBy || [];
+        return {
+          ...comment,
+          likedBy: liked 
+            ? likedBy.filter(id => id !== user.id)
+            : [...likedBy, user.id],
+          likes: liked ? comment.likes - 1 : comment.likes + 1
+        };
+      }
+      return comment;
+    }));
+
+    setTimeout(() => {
+      localStorage.setItem(`case_comments_${id}`, JSON.stringify(comments));
+    }, 0);
+  };
+
+  const handleDeleteComment = (commentId: string) => {
     if (!user) return;
     if (!window.confirm('确定要删除这条评论吗？')) return;
 
-    try {
-      const { error } = await supabase
-        .from('comments')
-        .delete()
-        .eq('id', commentId)
-        .eq('user_id', user.id); // 只能删除自己的
-
-      if (error) {
-        console.error('删除评论失败:', error);
-        alert('删除失败，请重试');
-        return;
-      }
-
-      setComments(prev => prev.filter(c => c.id !== commentId));
-    } catch (error) {
-      console.error('删除异常:', error);
-      alert('删除失败，请重试');
-    }
-  };
-
-  // 点赞评论（目前简化，后续可扩展）
-  const handleLikeComment = (commentId: string) => {
-    // 简单本地点赞，后续可迁移到 Supabase
-    setComments(prev => prev.map(c => {
-      if (c.id === commentId) {
-        const liked = c.likedBy?.includes(user?.id || '');
-        return {
-          ...c,
-          likedBy: liked 
-            ? (c.likedBy || []).filter(id => id !== user?.id)
-            : [...(c.likedBy || []), user?.id || ''],
-          likes: (c.likes || 0) + (liked ? -1 : 1)
-        };
-      }
-      return c;
-    }));
+    const updatedComments = comments.filter(c => c.id !== commentId);
+    setComments(updatedComments);
+    localStorage.setItem(`case_comments_${id}`, JSON.stringify(updatedComments));
   };
 
   const handleSaveEdit = async () => {
     if (!caseItem || !user) return;
+    
+    const updatedCase = {
+      ...caseItem,
+      title: editFormData.title,
+      diagnosis: editFormData.diagnosis,
+      symptoms: editFormData.symptoms,
+      description: editFormData.description,
+      treatment: editFormData.treatment,
+      outcome: editFormData.outcome,
+      tags: editFormData.tags,
+      updated_at: new Date().toISOString()
+    };
     
     try {
       const { error } = await supabase
@@ -491,113 +542,13 @@ const MobileCaseDetailPage: React.FC = () => {
 
       if (error) throw error;
 
-      setCaseItem({ ...caseItem, ...editFormData, updated_at: new Date().toISOString() });
+      setCaseItem(updatedCase);
       setIsEditing(false);
       alert('医案已更新');
     } catch (error) {
       console.error('更新失败:', error);
       alert('更新失败，请重试');
     }
-  };
-
-  // 评论项组件
-  const CommentItem: React.FC<{
-    comment: Comment;
-    currentUserId: string;
-    onLike: (id: string) => void;
-    onDelete: (id: string) => void;
-  }> = ({ comment, currentUserId, onLike, onDelete }) => {
-    const canDelete = currentUserId === comment.user_id;
-    const liked = comment.likedBy?.includes(currentUserId);
-    const displayName = comment.author_username || comment.author || '匿名用户';
-
-    const getIdentityIcon = () => {
-      switch(comment.identity) {
-        case 'specialist': return <Stethoscope className="w-4 h-4 text-blue-600" />;
-        case 'general': return <Award className="w-4 h-4 text-purple-600" />;
-        case 'patient': return <User className="w-4 h-4 text-green-600" />;
-        default: return <User className="w-4 h-4 text-gray-600" />;
-      }
-    };
-
-    const getIdentityText = () => {
-      switch(comment.identity) {
-        case 'specialist': return '专科医生';
-        case 'general': return '非专科医生';
-        case 'patient': return '病友';
-        default: return '其他';
-      }
-    };
-
-    const getIdentityColor = () => {
-      switch(comment.identity) {
-        case 'specialist': return 'bg-blue-50 text-blue-600';
-        case 'general': return 'bg-purple-50 text-purple-600';
-        case 'patient': return 'bg-green-50 text-green-600';
-        default: return 'bg-gray-50 text-gray-600';
-      }
-    };
-
-    const formatDate = (dateString: string) => {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
-
-      if (diffMins < 1) return '刚刚';
-      if (diffMins < 60) return `${diffMins}分钟前`;
-      if (diffHours < 24) return `${diffHours}小时前`;
-      if (diffDays < 7) return `${diffDays}天前`;
-      return date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
-    };
-
-    return (
-      <div className="bg-white rounded-xl p-4 shadow-sm mb-3">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-              {getIdentityIcon()}
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-gray-900">{displayName}</span>
-                {comment.identity && (
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${getIdentityColor()}`}>
-                    {getIdentityText()}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                <Clock className="w-3 h-3" />
-                <span>{formatDate(comment.created_at)}</span>
-              </div>
-            </div>
-          </div>
-          {canDelete && (
-            <button
-              onClick={() => onDelete(comment.id)}
-              className="text-gray-400 hover:text-red-500"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        <p className="text-gray-700 text-sm mb-3 whitespace-pre-wrap">{comment.content}</p>
-
-        <div className="flex items-center gap-4 pt-2 border-t">
-          <button
-            onClick={() => onLike(comment.id)}
-            className={`flex items-center gap-1 text-sm ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
-          >
-            <Heart className={`w-4 h-4 ${liked ? 'fill-red-500' : ''}`} />
-            <span>{comment.likes || 0}</span>
-          </button>
-        </div>
-      </div>
-    );
   };
 
   if (loading) {
