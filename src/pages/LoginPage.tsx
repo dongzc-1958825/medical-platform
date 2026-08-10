@@ -102,7 +102,7 @@ const LoginPage = () => {
     }
   };
 
-  // ✅ 修改：使用 Supabase Auth 注册
+  // ✅ 修改：使用 Supabase Auth 注册（增加详细日志）
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -147,43 +147,70 @@ const LoginPage = () => {
     }
 
     try {
+      console.log('📝 === REGISTER START ===');
+      console.log('📧 邮箱:', email);
+      console.log('👤 用户名:', username);
+      console.log('🔑 密码长度:', password.length);
+
       // 1. 用 Supabase Auth 注册
       const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
+        options: {
+          data: {
+            username: username.trim(),
+            role: 'patient'
+          }
+        }
       });
 
-      if (signUpError) throw signUpError;
+      console.log('📝 Supabase 注册响应:', { 
+        user: data.user?.id, 
+        session: data.session ? '有会话' : '无会话',
+        error: signUpError?.message || null
+      });
 
-      // 2. 注册成功后的额外信息（可选，存储到 profiles 表）
+      if (signUpError) {
+        console.error('❌ 注册失败:', signUpError);
+        setError(signUpError.message);
+        return;
+      }
+
       if (data.user) {
-        // 可以在这里把其他信息（姓名、身份证等）存到 profiles 表
+        console.log('✅ 用户创建成功，ID:', data.user.id);
+        
+        // 2. 注册成功后插入 profiles 表
         const { error: profileError } = await supabase
           .from('profiles')
-          .upsert({
+          .insert({
             id: data.user.id,
             username: username.trim(),
-            id_card: idCardCorrected || idCard,
+            email: email.trim(),
             phone: phone,
-            remark: remark,
             role: 'patient',
-            created_at: new Date().toISOString(),
+            created_at: new Date().toISOString()
           });
 
         if (profileError) {
-          console.warn('保存用户信息失败:', profileError);
+          console.error('❌ 创建 profile 失败:', profileError);
+          setError('用户创建成功，但资料保存失败，请尝试登录');
+          return;
         }
-      }
 
-      setMessage('🎉 注册成功！请登录...');
-      // 注册成功后切换到登录表单
-      setTimeout(() => {
-        setIsRegister(false);
-        setMessage('');
-        setEmail('');
-        setPassword('');
-      }, 2000);
+        console.log('✅ Profile 创建成功');
+        setMessage('🎉 注册成功！请登录...');
+        setTimeout(() => {
+          setIsRegister(false);
+          setMessage('');
+          setEmail('');
+          setPassword('');
+        }, 2000);
+      } else {
+        console.log('⚠️ 注册响应中没有用户数据');
+        setError('注册失败，请重试');
+      }
     } catch (err: any) {
+      console.error('❌ 注册异常:', err);
       setError(err.message || '注册失败，请重试');
     }
   };
