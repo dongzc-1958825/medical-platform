@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import CasesPage from '../pages/CasesPage';
 import CreateCasePage from '../pages/CreateCasePage';
 import MobileRouter from './MobileRouter';
+import ResetPasswordPage from '../pages/ResetPasswordPage';  // ✅ 添加导入
 
 const AppRouter: React.FC = () => {
   return (
@@ -12,6 +13,9 @@ const AppRouter: React.FC = () => {
       <Route path="/" element={<Navigate to="/cases" replace />} />
       <Route path="/cases" element={<CasesPage />} />
       <Route path="/cases/create" element={<CreateCasePage />} />
+      
+      {/* 重置密码页面 */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       
       {/* 移动端路由 */}
       <Route path="/mobile/*" element={<MobileRouter />} />
