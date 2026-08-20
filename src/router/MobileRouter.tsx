@@ -12,12 +12,12 @@ import ResetPasswordPage from '../pages/ResetPasswordPage';
 const MobileRouter: React.FC = () => {
   return (
     <Routes>
-      <Route path="mobile" element={<MobileHomePage />} />
-      <Route path="mobile/cases" element={<MobileCasesPage />} />
-      <Route path="mobile/cases/:id" element={<MobileCaseDetailPage />} />
-      <Route path="mobile/cases/create" element={<CreateCasePage />} />
-      <Route path="mobile/favorites" element={<MobileFavoritesPage />} />
-      <Route path="mobile/profile" element={<MobileProfilePage />} />
+      <Route path="/" element={<MobileHomePage />} />
+      <Route path="cases" element={<MobileCasesPage />} />
+      <Route path="cases/:id" element={<MobileCaseDetailPage />} />
+      <Route path="cases/create" element={<CreateCasePage />} />
+      <Route path="favorites" element={<MobileFavoritesPage />} />
+      <Route path="profile" element={<MobileProfilePage />} />
       <Route path="reset-password" element={<ResetPasswordPage />} />
     </Routes>
   );
