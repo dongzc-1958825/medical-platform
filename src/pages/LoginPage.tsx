@@ -253,7 +253,7 @@ const LoginPage = () => {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: 'https://dongzc-1958825.github.io/medical-platform/#/reset-password',
+        redirectTo: 'https://dongzc-1958825.github.io/medical-platform/#/mobile/reset-password',
       });
 
       if (error) throw error;
