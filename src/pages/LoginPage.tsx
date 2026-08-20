@@ -1,9 +1,9 @@
 // src/pages/LoginPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/services/supabaseClient';
 import { isMobileDevice } from '@/shared/utils/device';
-import { LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { LogIn, UserPlus, ArrowLeft, X } from 'lucide-react';
 
 const LoginPage = () => {
   const [isRegister, setIsRegister] = useState(false);
@@ -18,6 +18,14 @@ const LoginPage = () => {
   const [idCardCorrected, setIdCardCorrected] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  
+  // 忘记密码相关状态
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -69,7 +77,7 @@ const LoginPage = () => {
     return /^1[3-9]\d{9}$/.test(phoneNum);
   };
 
-  // ✅ 修改：使用 Supabase Auth 登录
+  // ✅ 登录
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -102,7 +110,7 @@ const LoginPage = () => {
     }
   };
 
-  // ✅ 修改：使用 Supabase Auth 注册（增加详细日志）
+  // ✅ 注册
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -152,7 +160,6 @@ const LoginPage = () => {
       console.log('👤 用户名:', username);
       console.log('🔑 密码长度:', password.length);
 
-      // 1. 用 Supabase Auth 注册
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -179,25 +186,43 @@ const LoginPage = () => {
       if (data.user) {
         console.log('✅ 用户创建成功，ID:', data.user.id);
         
-        // 2. 注册成功后插入 profiles 表
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            username: username.trim(),
-            email: email.trim(),
-            phone: phone,
-            role: 'patient',
-            created_at: new Date().toISOString()
-          });
+        // ✅ 带重试的 profiles 插入
+        let profileCreated = false;
+        let lastError = null;
+        
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          console.log(`📝 尝试创建 profile (第 ${attempt} 次)...`);
+          
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              username: username.trim(),
+              email: email.trim(),
+              phone: phone,
+              role: 'patient',
+              created_at: new Date().toISOString()
+            });
 
-        if (profileError) {
-          console.error('❌ 创建 profile 失败:', profileError);
-          setError('用户创建成功，但资料保存失败，请尝试登录');
-          return;
+          if (!profileError) {
+            profileCreated = true;
+            console.log('✅ Profile 创建成功');
+            break;
+          }
+          
+          lastError = profileError;
+          console.warn(`⚠️ 第 ${attempt} 次创建失败:`, profileError.message);
+          
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         }
 
-        console.log('✅ Profile 创建成功');
+        if (!profileCreated) {
+          console.error('❌ 创建 profile 失败（重试3次）:', lastError);
+          setError('注册成功，但资料保存失败，请联系管理员');
+        }
+
         setMessage('🎉 注册成功！请登录...');
         setTimeout(() => {
           setIsRegister(false);
@@ -212,6 +237,40 @@ const LoginPage = () => {
     } catch (err: any) {
       console.error('❌ 注册异常:', err);
       setError(err.message || '注册失败，请重试');
+    }
+  };
+
+  // ✅ 忘记密码：发送重置邮件
+  const handleResetPassword = async () => {
+    if (!resetEmail.trim()) {
+      setResetError('请输入邮箱');
+      return;
+    }
+
+    setResetLoading(true);
+    setResetError('');
+    setResetMessage('');
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: 'https://dongzc-1958825.github.io/medical-platform/#/reset-password',
+      });
+
+      if (error) throw error;
+
+      setResetMessage('✅ 重置链接已发送！请检查您的邮箱（包括垃圾邮件箱）');
+      setResetEmail('');
+      
+      // 3秒后自动关闭弹窗
+      setTimeout(() => {
+        setShowResetPassword(false);
+        setResetMessage('');
+      }, 3000);
+    } catch (err: any) {
+      console.error('❌ 发送重置邮件失败:', err);
+      setResetError(err.message || '发送失败，请重试');
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -389,6 +448,18 @@ const LoginPage = () => {
                 required
               />
             </div>
+            
+            {/* ✅ 忘记密码链接 */}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setShowResetPassword(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+              >
+                忘记密码？
+              </button>
+            </div>
+
             <button type="submit" className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:opacity-90">
               登录
             </button>
@@ -400,6 +471,81 @@ const LoginPage = () => {
           </form>
         )}
       </div>
+
+      {/* ✅ 忘记密码弹窗 */}
+      {showResetPassword && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowResetPassword(false);
+          }}
+        >
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md relative">
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => {
+                setShowResetPassword(false);
+                setResetMessage('');
+                setResetError('');
+                setResetEmail('');
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">重置密码</h2>
+            <p className="text-gray-600 mb-6">
+              输入您的邮箱，我们将发送密码重置链接
+            </p>
+
+            {resetMessage && (
+              <div className="mb-4 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                {resetMessage}
+              </div>
+            )}
+
+            {resetError && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+                {resetError}
+              </div>
+            )}
+
+            <input
+              type="email"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              placeholder="请输入您的邮箱"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors mb-4"
+              disabled={resetLoading}
+            />
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowResetPassword(false);
+                  setResetMessage('');
+                  setResetError('');
+                  setResetEmail('');
+                }}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                disabled={resetLoading}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={resetLoading || !resetEmail.trim()}
+                className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {resetLoading ? '发送中...' : '发送重置链接'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
