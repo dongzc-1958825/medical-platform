@@ -1,4 +1,5 @@
-﻿import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+﻿// src/App.tsx
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { isMobileDevice } from './shared/utils/device';
 import { AuthProvider } from './contexts/AuthContext';
 import HealthReportPage from './pages/mobile/HealthReportPage';
@@ -72,6 +73,9 @@ import NotFoundPage from './pages/NotFoundPage';
 // 登录页面
 import LoginPage from './pages/LoginPage';
 
+// ✅ 重置密码页面
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 const DeviceRedirect = () => {
   // 获取完整路径（包括 hash）
   const fullPath = window.location.hash || window.location.pathname;
@@ -100,11 +104,14 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* 根路径重定向 */}
-<Route path="/direct-users" element={<UserManagementPage />} />
+          <Route path="/direct-users" element={<UserManagementPage />} />
           <Route path="/" element={<DeviceRedirect />} />
           
           {/* 登录页面 */}
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* ✅ 重置密码页面 - 不需要登录 */}
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           
           {/* 独立的管理员路由 - 使用 AdminLayout */}
           <Route path="/admin" element={<AdminLayout />}>
