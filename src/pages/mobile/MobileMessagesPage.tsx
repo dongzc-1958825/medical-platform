@@ -37,7 +37,6 @@ const loadAllMessagesFromSupabase = async () => {
       return [];
     }
 
-    // 转换数据格式以匹配前端
     return (data || []).map((item: any) => ({
       id: item.id,
       type: item.type,
@@ -106,7 +105,6 @@ const MessagePublishForm: React.FC<{
     setIsSubmitting(true);
 
     try {
-      // 写入 Supabase
       const { data, error } = await supabase
         .from('news')
         .insert({
@@ -126,7 +124,6 @@ const MessagePublishForm: React.FC<{
 
       if (error) throw error;
 
-      // 构造返回给父组件的数据
       const newMessage = {
         id: data.id,
         type: data.type,
@@ -508,7 +505,6 @@ const MobileMessagesPage: React.FC = () => {
         return;
       }
 
-      // 写入 Supabase
       const { error } = await supabase
         .from('news')
         .update({
@@ -523,7 +519,6 @@ const MobileMessagesPage: React.FC = () => {
 
       if (error) throw error;
 
-      // 刷新列表
       const messages = await loadAllMessagesFromSupabase();
       setAllMessages(messages);
 
@@ -565,7 +560,6 @@ const MobileMessagesPage: React.FC = () => {
       return;
     }
 
-    // 本地点赞逻辑（简化）
     const currentInteraction = getUserInteraction(messageId);
     const liked = !currentInteraction.liked;
     const likeChange = liked ? 1 : -1;
@@ -648,33 +642,64 @@ const MobileMessagesPage: React.FC = () => {
     }));
   };
 
-  const handleWechatImport = (importedContent: { title: string; content: string; tags: string[] }) => {
-    // 微信导入走本地（暂不存 Supabase）
-    const newMessage = {
-      id: `wechat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: "wechat",
-      title: importedContent.title,
-      content: importedContent.content,
-      summary: importedContent.content.substring(0, 100) + (importedContent.content.length > 100 ? "..." : ""),
-      author: "微信导入",
-      date: new Date().toLocaleDateString('zh-CN', { 
-        month: 'numeric', 
-        day: 'numeric', 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      isPinned: false,
-      isRead: false,
-      tags: [...importedContent.tags, "微信"],
-      stats: { likes: 0, comments: 0, views: 1 },
-      isCollected: false,
-      publisherId: user.id,
-      source: "wechat",
-      comments: []
-    };
+  // ✅ 修改：微信导入也写入 Supabase
+  const handleWechatImport = async (importedContent: { title: string; content: string; tags: string[] }) => {
+    if (!user) {
+      alert('请先登录');
+      return;
+    }
 
-    setAllMessages(prev => [newMessage, ...prev]);
-    setSelectedType("wechat");
+    try {
+      const { data, error } = await supabase
+        .from('news')
+        .insert({
+          type: 'wechat',
+          title: importedContent.title,
+          content: importedContent.content,
+          summary: importedContent.content.substring(0, 100) + 
+                  (importedContent.content.length > 100 ? "..." : ""),
+          author: '微信导入',
+          publisher_id: user.id,
+          source: 'wechat',
+          tags: [...importedContent.tags, '微信'],
+          stats: { likes: 0, comments: 0, views: 1 },
+          comments: []
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newMessage = {
+        id: data.id,
+        type: data.type,
+        title: data.title,
+        content: data.content,
+        summary: data.summary,
+        author: data.author,
+        date: new Date(data.created_at).toLocaleDateString('zh-CN', { 
+          month: 'numeric', 
+          day: 'numeric', 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }),
+        isPinned: data.is_pinned,
+        isRead: false,
+        tags: data.tags || [],
+        stats: data.stats || { likes: 0, comments: 0, views: 0 },
+        isCollected: false,
+        publisherId: data.publisher_id,
+        source: data.source,
+        comments: []
+      };
+
+      setAllMessages(prev => [newMessage, ...prev]);
+      setSelectedType("wechat");
+      setShowWechatImport(false);
+    } catch (error: any) {
+      console.error('微信导入失败:', error);
+      alert('导入失败：' + error.message);
+    }
   };
 
   if (isLoading || loadingMessages) {
@@ -961,7 +986,6 @@ const MobileMessagesPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 管理菜单弹窗 */}
                 {showManageMenu === message.id && (
                   <div 
                     className="fixed inset-0 z-[9999]" 
